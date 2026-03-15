@@ -1,0 +1,16 @@
+[project]
+name = "testclaw"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "glib>=1.0.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.3",
+    "openai>=2.28.0",
+    "pillow>=12.1.1",
+    "pyautogui>=0.9.54",
+    "pyreadline3>=3.5.4",
+    "pywayland>=0.4.18",
+]
