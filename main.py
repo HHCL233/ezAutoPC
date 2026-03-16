@@ -7,14 +7,92 @@ from typing import List
 import json
 import readline
 import sys
+import subprocess
+import threading
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+from time import sleep
 
-BASE_URL = "https://apis.iflow.cn/v1"
-MODEL = "qwen3-vl-plus"
-API_KEY = "sk-3135442530cca9a94ccc2b094c2e06bc"
+BASE_URL = "https://api.moonshot.cn/v1"
+MODEL = "kimi-k2.5"
+API_KEY = ""
 client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+
+messages: List[ChatCompletionMessageParam] = [
+    {
+        "role": "system",
+        "content": """
+你是一个可以操控电脑的AI模型,并且需要按照格式输出:
+当前上传了一张屏幕截图,目前需要根据图片中内容执行对应操作,鼠标的每一次移动和点击都需要精准根据图片对应位置的坐标,返回内容使用JSON格式,但不要夹带任何Markdown信息,JSON不使用```json```包裹而是直接输出,只输出符合格式的JSON格式内容,格式为
+[{
+    "type":"操作1操作类型",
+    "arguments":{
+        "参数1":"参数对应的值1",
+        "参数2":"参数对应的值2"
+    }
+},
+{
+    "type":"操作2操作类型",
+    "arguments":{
+        "参数1":"参数对应的值1",
+        "参数2":"参数对应的值2"
+    }
+},
+{
+    "type":"操作3操作类型(这个列表还可以添加更多操作......)",
+    "arguments":{
+        "参数1":"参数对应的值1",
+        "参数2":"参数对应的值2"
+    }
+}]
+可以在一次内执行无数个操作,并且执行的操作可以重复(例如可以在一次内执行100个mouse)
+坐标注意事项:
+- y=0 是屏幕最顶部
+- y=1080 是屏幕最底部
+- 在进行所有坐标有关操作时必须使用图片对应位置的坐标
+操作说明:
+模拟鼠标移动操作:
+- type为"mouse"
+- arguments有x(对应屏幕截图中网格的X坐标)(int类型),y(对应屏幕截图中网格的Y坐标)(int类型)2个argument
+- {x=0,y=0}为屏幕左上角,{x=1920,y=0}为屏幕右上角,{x=1920,y=1080}为屏幕右下角,{x=0,y=1080}为屏幕左下角
+- 在进行所有坐标有关操作时必须使用图片对应位置的坐标
+模拟鼠标单次点击操作:
+- type为"click"
+- arguments为空
+- 点击当前鼠标指针所在坐标
+模拟鼠标双次点击操作:
+- type为"doubleClick"
+- arguments为空
+- 点击当前鼠标指针所在坐标
+模拟输入文本操作:
+- type为"write"
+- arguments有content,内容为向主机输入的内容
+- 可以向处于焦点状态内的输入文本框内添加内容
+说明操作:
+- type为"message"
+- arguments有content,内容为一次内操作的简要说明
+- 该操作必须在每一次中加入,用于说明一次内操作的简要说明
+继续任务操作:
+- type为"continue"
+- arguments为wait,内容为等待的秒数(int类型)(在0-1.5区间)
+- 如果有一个大任务,并且在当前场景无法全部完成,可以在末尾加入此操作用于继续当前任务(此操作如要使用,需要放置在操作列表的末尾)
+任务困难操作
+- type为"difficulty"
+- arguments为空
+- 如果用户提出的操作要求无法实现则需要在该次的开头添加此操作
+终端操作
+- type为"terminal"
+- arguments有command,内容为要执行的单条终端指令
+- 当前主机使用的终端为bash,使用bash指令进行操作
+部分重点注意:
+- 打开软件需要先把鼠标移动到图片上的对应坐标网格坐标,再进行双次点击
+- 如果有较为复杂或需要不只一张屏幕截图的任务(如"打开B站","帮我打开开始菜单并寻找软件XXX"等)需要主动将这些任务分为小任务并使用"继续任务操作"来操作
+- 在进行任何操作时优先使用"终端操作"
+- "终端操作"无法获得终端输出,因此不要检测是否存在此软件
+            """,
+    },
+]
 
 
 def initReadline():
@@ -59,7 +137,7 @@ def screenshot():
 
 
 def sendImageToAI(prompt, imageSource, isLocal=True):
-    messages: List[ChatCompletionMessageParam] = [
+    messages.append(
         {
             "role": "user",
             "content": [
@@ -73,64 +151,22 @@ def sendImageToAI(prompt, imageSource, isLocal=True):
                     },
                 },
             ],
-        },
-        {
-            "role": "system",
-            "content": """
-你是一个可以操控电脑的AI模型,并且需要按照格式输出:
-当前上传了一张屏幕截图,使用图片上的网格坐标作为坐标系,目前需要根据图片中内容执行对应操作,图片上的红色网格为坐标网格,坐标网格上的蓝色数字为截图中网格坐标,鼠标的每一次移动和点击都需要精准根据图片上的网格坐标确定位置,不可以使用真实坐标,必须使用截图中网格上显示的坐标(如截图中网格显示A在坐标(150,850),现在需要把鼠标移动到A,就需要移动到x=150,y=850),返回内容使用JSON格式,但不要夹带任何Markdown信息,JSON不使用```json```包裹而是直接输出,格式为
-[{
-    "type":"操作1操作类型",
-    "arguments":{
-        "参数1":"参数对应的值1",
-        "参数2":"参数对应的值2"
-    }
-},{
-    "type":"操作2操作类型",
-    "arguments":{
-        "参数1":"参数对应的值1",
-        "参数2":"参数对应的值2"
-    }
-}]
-可以在一次内执行无数个操作,并且执行的操作可以重复(例如可以在一次内执行100个mouse)
-在进行所有坐标有关操作时必须使用图片上的网格坐标
-操作说明:
-模拟鼠标移动操作:
-- type为"mouse"
-- arguments有x(对应屏幕截图中网格的X坐标),y(对应屏幕截图中网格的Y坐标)2个argument
-- {x=0,y=0}为屏幕左上角,{x=1920,y=0}为屏幕右上角,{x=1920,y=1080}为屏幕右下角,{x=0,y=1080}为屏幕左下角
-- 在进行操作时必须基于图片上的网格坐标
-模拟鼠标单次点击操作:
-- type为"click"
-- arguments为空
-- 点击当前鼠标指针所在坐标
-模拟鼠标双次点击操作:
-- type为"doubleClick"
-- arguments为空
-- 点击当前鼠标指针所在坐标
-模拟输入文本操作:
-- type为"write"
-- arguments有content,内容为向主机输入的内容
-- 可以向处于焦点状态内的输入文本框内添加内容
-与用户对话操作:
-- type为"message"
-- arguments有content,内容为向用户返回的内容
-- 该操作用于与用户对话
-继续任务操作:
-- type为"continue"
-- arguments为空
-- 如果有一个大任务,并且在当前场景无法全部完成,可以在末尾加入此操作用于继续当前任务(此操作如要使用,需要放置在操作列表的末尾)
-部分重点注意:
-- 在进行所有坐标有关操作时必须基于图片上的网格坐标!
-- 打开软件需要先把鼠标移动到图片上的对应网格坐标,再进行双次点击
-- 如果有较为复杂的任务(如"打开B站","帮我打开开始菜单并寻找软件XXX"等)需要将这些任务分为小任务来操作
-            """,
-        },
-    ]
+        }
+    )
 
     try:
         response = client.chat.completions.create(
-            model=MODEL, messages=messages, temperature=0.7, max_tokens=1000
+            model=MODEL,
+            messages=messages,
+            temperature=0.6,
+            max_tokens=1000,
+            extra_body={"thinking": {"type": "disabled"}},
+        )
+        messages.append(
+            {
+                "role": "assistant",
+                "content": response.choices[0].message.content,
+            }
         )
         return response.choices[0].message.content
 
@@ -138,7 +174,35 @@ def sendImageToAI(prompt, imageSource, isLocal=True):
         return f"请求失败：{str(e)}"
 
 
-def handleAIMessage(content):
+def runSoftwareWithOutput(softwarePath):
+    try:
+        process = subprocess.Popen(
+            softwarePath,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            text=False,
+            bufsize=1,
+        )
+
+        stdoutThread = threading.Thread(args=(process.stdout, "STDOUT"))
+        stderrThread = threading.Thread(args=(process.stderr, "STDERR"))
+
+        stdoutThread.daemon = False
+        stderrThread.daemon = False
+
+        stdoutThread.start()
+        stderrThread.start()
+
+        print(f"软件已启动,PID: {process.pid}")
+        return process
+
+    except Exception as e:
+        print(f"启动软件失败: {e}")
+        return None
+
+
+def handleAIMessage(content, userMessage):
     try:
         controlsJSON = json.loads(content)
         for control in controlsJSON:
@@ -147,7 +211,7 @@ def handleAIMessage(content):
             if controlType == "mouse":
                 pyautogui.FAILSAFE = False
                 pyautogui.moveTo(
-                    controlArguments["x"], controlArguments["y"], duration=0
+                    int(controlArguments["x"]), int(controlArguments["y"]), duration=0
                 )
                 print(
                     "[鼠标移动]位置",
@@ -165,17 +229,22 @@ def handleAIMessage(content):
             elif controlType == "message":
                 print("[AI消息]", controlArguments["content"])
             elif controlType == "continue":
-                sendAIMessage(content)
+                sleep(controlArguments["wait"])
+                sendAIMessage(userMessage)
+            elif controlType == "terminal":
+                runCommand = controlArguments["command"]
+                print("[执行命令]", runCommand)
+                runSoftwareWithOutput(runCommand)
     except Exception as e:
         print("[异常]", e)
 
 
-def sendAIMessage(content):
+def sendAIMessage(userContent):
     screenshot()
     imageAddLim("screenshots/screenshot.jpg")
-    messages = sendImageToAI(content, "screenshots/screenshot.jpg")
+    messages = sendImageToAI(userContent, "screenshots/screenshot.jpg")
     print(messages)
-    handleAIMessage(messages)
+    handleAIMessage(messages, userContent)
 
 
 def imageAddLim(path):
@@ -215,7 +284,7 @@ def imageAddLim(path):
                 x,
                 y_plot,
                 f"({int(x)},{int(y_plot)})",
-                fontsize=6,
+                fontsize=6.5,
                 color="lightblue",
                 ha="center",
                 va="center",
