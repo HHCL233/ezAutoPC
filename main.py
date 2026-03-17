@@ -17,8 +17,9 @@ from time import sleep
 BASE_URL = "https://api.moonshot.cn/v1"
 MODEL = "kimi-k2.5"
 API_KEY = ""
-client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
+config = {}
+client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 messages: List[ChatCompletionMessageParam] = [
     {
         "role": "system",
@@ -103,6 +104,24 @@ messages: List[ChatCompletionMessageParam] = [
 ]
 
 
+def readConfig():
+    try:
+        if os.path.exists("config.json"):
+            print("[读取配置] config 文件存在,开始读取文件内容...")
+            with open("config.json", "r", encoding="utf-8") as f:
+                configContent = f.read()
+                configJSON = json.loads(configContent)
+                return configJSON
+        else:
+            print("[读取配置] config 文件不存在")
+            print("[读取配置] 启用 main 内配置")
+            return {"api_key": API_KEY, "model": MODEL, "base_url": BASE_URL}
+    except Exception as e:
+        print("[读取配置] 读取失败: ", e)
+        print("[读取配置] 启用 main 内配置")
+        return {"api_key": API_KEY, "model": MODEL, "base_url": BASE_URL}
+
+
 def initReadline():
     readline.parse_and_bind("arrow-left: backward-char")
     readline.parse_and_bind("arrow-right: forward-char")
@@ -163,8 +182,10 @@ def sendImageToAI(prompt, imageSource, isLocal=True):
     )
 
     try:
+        client.api_key = config["api_key"]
+        client.base_url = config["base_url"]
         response = client.chat.completions.create(
-            model=MODEL,
+            model=config["model"],
             messages=messages,
             temperature=0.6,
             max_tokens=1000,
@@ -323,6 +344,8 @@ def imageAddLim(path):
 
 
 def main():
+    global config
+    config = readConfig()
     while True:
         print("")
         userInput = terminalInput()
