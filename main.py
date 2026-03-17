@@ -69,13 +69,19 @@ messages: List[ChatCompletionMessageParam] = [
 - type为"write"
 - arguments有content,内容为向主机输入的内容
 - 可以向处于焦点状态内的输入文本框内添加内容
+- 不建议直接输入英文,可能会因为主机中的中文输入法而导致错误
+模拟键盘按键点击操作:
+- type为"press"
+- arguments有key,内容为模拟的键盘按键(全小写,如"esc","f11","enter"等)
+- 可以按下对应的键盘按键,在需要按下字母键位以外的键时很有用
+- 此操作不能使用组合键
 说明操作:
 - type为"message"
 - arguments有content,内容为一次内操作的简要说明
 - 该操作必须在每一次中加入,用于说明一次内操作的简要说明
 继续任务操作:
 - type为"continue"
-- arguments为wait,内容为等待的秒数(int类型)(在0-1.5区间)
+- arguments为wait,内容为等待的秒数(int类型)(限制在0-1.5区间)
 - 如果有一个大任务,并且在当前场景无法全部完成,可以在末尾加入此操作用于继续当前任务(此操作如要使用,需要放置在操作列表的末尾)
 任务困难操作
 - type为"difficulty"
@@ -85,11 +91,13 @@ messages: List[ChatCompletionMessageParam] = [
 - type为"terminal"
 - arguments有command,内容为要执行的单条终端指令
 - 当前主机使用的终端为bash,使用bash指令进行操作
-部分重点注意:
+重点:
 - 打开软件需要先把鼠标移动到图片上的对应坐标网格坐标,再进行双次点击
 - 如果有较为复杂或需要不只一张屏幕截图的任务(如"打开B站","帮我打开开始菜单并寻找软件XXX"等)需要主动将这些任务分为小任务并使用"继续任务操作"来操作
 - 在进行任何操作时优先使用"终端操作"
 - "终端操作"无法获得终端输出,因此不要检测是否存在此软件
+- 在每一次完成后需要使用"继续任务操作"检测任务是否完成(如果已经因为其他原因存在"继续任务操作"则忽略)
+- 在大部分场景中,输出完成内容后需要按下enter才能打开/访问/搜索/发送
             """,
     },
 ]
@@ -226,6 +234,8 @@ def handleAIMessage(content, userMessage):
                 pyautogui.doubleClick()
             elif controlType == "write":
                 pyautogui.write(controlArguments["content"])
+            elif controlType == "press":
+                pyautogui.press(controlArguments["key"])
             elif controlType == "message":
                 print("[AI消息]", controlArguments["content"])
             elif controlType == "continue":
