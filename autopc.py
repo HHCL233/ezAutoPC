@@ -233,7 +233,21 @@ class AutoPC:
             return response.choices[0].message.content
 
         except Exception as e:
-            return f"请求失败：{str(e)}"
+            errorStr = json.dumps(
+                [
+                    {
+                        "type": "error",
+                        "arguments": {"content": f"请求失败：{str(e)}"},
+                    }
+                ]
+            )
+            self.messages.append(
+                {
+                    "role": "assistant",
+                    "content": errorStr,
+                }
+            )
+            return errorStr
 
     def runCommandSilently(self, command):
         try:
@@ -319,6 +333,7 @@ class AutoPC:
         if screenshotPath:
             self.imageAddLim(screenshotPath)
             aiResponse = self.sendImageToAI(inputContent, screenshotPath)
+            print(aiResponse)
             for handler in self.onAISendMessage:
                 handler()
             self.handleAIMessage(aiResponse, inputContent)

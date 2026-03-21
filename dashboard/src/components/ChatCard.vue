@@ -13,6 +13,10 @@ const props = defineProps([
                 <div class="message-content" v-if="value.type == 'message' || value.type == 'user'">
                     {{ value.arguments.content }}
                 </div>
+                <mdui-card variant="outlined" v-else-if="value.type == 'error'" class="message-nomessage-content">
+                    遇到了错误: <br>
+                    {{ value.arguments.content }}
+                </mdui-card>
                 <mdui-card variant="outlined" v-else-if="value.type != 'application'" class="message-nomessage-content">
                     执行操作: <br>
                     {{ JSON.stringify(value) }}
