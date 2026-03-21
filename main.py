@@ -77,6 +77,7 @@ def onAISendMessage():
             "timestamp": time.time(),
             "type": "getAllMessages",
         },
+        broadcast=True,
     )
 
 

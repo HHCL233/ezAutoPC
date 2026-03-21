@@ -29,9 +29,15 @@ class AutoPC:
             {
                 "role": "system",
                 "content": """
-你是一个可以操控电脑的AI模型
+你是一个可以操控电脑的AI模型,名字叫做ezAutoAI
 用户输入格式为[{
     "type":"user",
+    "arguments":{
+        "content":"用户输入的内容",
+    }
+}]
+程序返回(执行支持返回的操作后)格式为[{
+    "type":"application",
     "arguments":{
         "content":"用户输入的内容",
     }
@@ -92,6 +98,7 @@ class AutoPC:
 - type为"message"
 - arguments有content,内容为一次内操作的简要说明
 - 该操作必须在每一次中加入,用于说明一次内操作的简要说明
+- 如果要和用户进行对话,也需要使用该操作
 继续任务操作:
 - type为"continue"
 - arguments为wait,内容为等待的秒数(int类型)(限制在0-1.5区间)
@@ -104,6 +111,12 @@ class AutoPC:
 - type为"terminal"
 - arguments有command,内容为要执行的单条终端指令
 - 当前主机使用的终端为bash,使用bash指令进行操作
+- 此操作可用于启动带有GUI的应用等(不要启动命令行程序)
+可返回终端操作
+- type为"returnTerminal"
+- arguments有command,内容为要执行的单条终端指令
+- 当前主机使用的终端为bash,使用bash指令进行操作
+- 此操作可以获取运行指令的输出内容,可以运行命令行程序程序(例如ping等)
 重点:
 - 打开软件需要先把鼠标移动到图片上的对应坐标网格坐标,再进行双次点击
 - 如果有较为复杂或需要不只一张屏幕截图的任务(如"打开B站","帮我打开开始菜单并寻找软件XXX"等)需要主动将这些任务分为小任务并使用"继续任务操作"来操作
@@ -222,42 +235,16 @@ class AutoPC:
         except Exception as e:
             return f"请求失败：{str(e)}"
 
-    def runSoftwareWithOutput(self, softwarePath):
+    def runCommandSilently(self, command):
         try:
-            process = subprocess.Popen(
-                softwarePath,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True,
-                text=False,
-                bufsize=1,
+            devnull = open(os.devnull, "w")
+            subprocess.run(
+                command, shell=True, stdout=devnull, stderr=devnull, check=True
             )
-
-            def printOutput(pipe, pipeType):
-                for line in iter(pipe.readline, b""):
-                    print(
-                        f"[{pipeType}] {line.decode('utf-8', errors='ignore').strip()}"
-                    )
-
-            stdoutThread = threading.Thread(
-                target=printOutput, args=(process.stdout, "STDOUT")
-            )
-            stderrThread = threading.Thread(
-                target=printOutput, args=(process.stderr, "STDERR")
-            )
-
-            stdoutThread.daemon = False
-            stderrThread.daemon = False
-
-            stdoutThread.start()
-            stderrThread.start()
-
-            print(f"软件已启动,PID: {process.pid}")
-            return process
-
+            devnull.close()
         except Exception as e:
-            print(f"启动软件失败: {e}")
-            return None
+            print(f"[单独线程运行命令] {e}")
+            pass
 
     def handleAIMessage(self, content, userMessage):
         try:
@@ -290,21 +277,38 @@ class AutoPC:
                 elif controlType == "message":
                     print("[AI消息]", controlArguments["content"])
                 elif controlType == "continue":
-                    sleep(controlArguments["wait"])
-                    self.sendAIMessage(userMessage)
+                    jsonContent = json.loads(userMessage)
+                    sleep(int(controlArguments["wait"]))
+                    self.sendAIMessage(
+                        f"继续操作({jsonContent[0]['arguments']['content'].encode('raw_unicode_escape').decode('utf-8')})",
+                        "application",
+                    )
                 elif controlType == "terminal":
                     runCommand = controlArguments["command"]
                     print("[执行命令]", runCommand)
-                    self.runSoftwareWithOutput(runCommand)
+                    thread = threading.Thread(
+                        target=self.runCommandSilently, args=(runCommand,)
+                    )
+                    thread.daemon = False
+                    thread.start()
+                elif controlType == "returnTerminal":
+                    runCommand = controlArguments["command"]
+                    print("[执行命令]", runCommand)
+                    result = subprocess.run(
+                        runCommand, shell=True, capture_output=True, text=True
+                    )
+                    self.sendAIMessage(
+                        f"终端操作已完成,输出:{result.stdout.strip()}", "application"
+                    )
                 for handler in self.onAISendMessage:
                     handler()
         except Exception as e:
             print("[异常]", e)
 
-    def sendAIMessage(self, userContent):
+    def sendAIMessage(self, userContent, type="user"):
         inputJson = [
             {
-                "type": "user",
+                "type": type,
                 "arguments": {
                     "content": userContent,
                 },

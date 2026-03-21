@@ -16,11 +16,11 @@ export async function generalFetch(url = "", data = {}) {
 
 }
 
-export function generalWS(url = "") {
+export function generalWS(url = "", errorCallback?: () => void) {
     try {
         const socket = io(`http://${location.hostname}:5000/${url}`, {
             transports: ['websocket'],
-            reconnection: true,
+            reconnection: false,
             reconnectionAttempts: 5,
         });
         return socket
@@ -34,6 +34,9 @@ export function generalWS(url = "") {
             });
             return socket
         } catch (error2) {
+            if (errorCallback) {
+                errorCallback()
+            }
             throw new Error(`所有IO请求端点均失败,最后错误：${error2}`);
         }
     }

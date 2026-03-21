@@ -12,5 +12,9 @@
 
 1. Clone仓库
 2. `uv sync`
-3. 修改 main.py 中的 BASE_URL、MODEL、API_KEY
-4. `uv run main.py`
+3. 修改 config.json 中的 BASE_URL、MODEL、API_KEY
+4. `cd dashboard`
+5. `npm install`
+6. `npm run build`
+7. `cd ..`
+8. `uv run main.py`

@@ -7,13 +7,13 @@ const props = defineProps([
 ])
 </script>
 <template>
-    <div class="chat-card" :class="[type == 'user' ? 'user' : 'ai']">
+    <div class="chat-card" :class="type">
         <mdui-card class="chat-content">
             <div v-for="(value, index) in messages" class="message">
                 <div class="message-content" v-if="value.type == 'message' || value.type == 'user'">
                     {{ value.arguments.content }}
                 </div>
-                <mdui-card variant="outlined" v-else class="message-nomessage-content">
+                <mdui-card variant="outlined" v-else-if="value.type != 'application'" class="message-nomessage-content">
                     执行操作: <br>
                     {{ JSON.stringify(value) }}
                 </mdui-card>
@@ -31,9 +31,15 @@ const props = defineProps([
     text-align: right
 }
 
+.chat-card.application {
+    display: none;
+}
+
+
 .chat-content {
     padding: 16px;
     margin: 12px;
+    max-width: 80%;
 }
 
 .message-content {}
