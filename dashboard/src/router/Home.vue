@@ -2,7 +2,7 @@
 <template>
     <div class="home">
         <h1>你好!</h1>
-        <p></p>
+        <p>无人区...</p>
     </div>
 </template>
 <style scoped>

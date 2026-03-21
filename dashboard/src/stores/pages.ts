@@ -5,7 +5,6 @@ import type { RouteRecordRaw } from 'vue-router'
 import SettingWebui from '@/router/Setting/Webui.vue'
 
 
-type PageKey = 'home' | 'chat' | 'setting'
 interface PageChild {
   path: string
   title: string,
@@ -16,6 +15,7 @@ interface PageItem {
   title: string
   children: PageChild[]
 }
+export type PageKey = 'home' | 'chat' | 'setting'
 
 export const usePagesStore = defineStore('pages', () => {
   const router = useRouter()
@@ -24,6 +24,16 @@ export const usePagesStore = defineStore('pages', () => {
     home: {
       path: '',
       title: '首页',
+      children: []
+    },
+    chat: {
+      path: 'chat',
+      title: '聊天',
+      children: []
+    },
+    setting: {
+      path: 'setting',
+      title: '设置',
       children: [{
         path: 'webui-setting',
         title: 'WebUI设置',
@@ -34,16 +44,6 @@ export const usePagesStore = defineStore('pages', () => {
         title: '本体设置',
         component: SettingWebui,
       }]
-    },
-    chat: {
-      path: 'chat',
-      title: '聊天',
-      children: []
-    },
-    setting: {
-      path: 'setting',
-      title: '设置',
-      children: []
     }
   })
   const page = ref<PageItem>(pageList.value.home)
