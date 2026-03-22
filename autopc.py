@@ -3,7 +3,7 @@ import os
 import base64
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
-from typing import List
+from typing import List, Dict
 import json
 import readline
 import sys
@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from time import sleep
+from markdown import Markdown
 
 
 class AutoPC:
@@ -20,9 +21,11 @@ class AutoPC:
     BASE_URL = "https://api.moonshot.cn/v1"
     MODEL = "kimi-k2.5"
     API_KEY = ""
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
     def __init__(self):
         # 初始化实例变量
+        self.skills = {}
         self.config = {}
         self.client = OpenAI(api_key=self.API_KEY, base_url=self.BASE_URL)
         self.messages: List[ChatCompletionMessageParam] = [
@@ -34,9 +37,35 @@ class AutoPC:
     "type":"user",
     "arguments":{
         "content":"用户输入的内容",
-        "is_multimodal":true/false
+        "is_multimodal":true/false,
+        "skills":{
+    'Skill的文件夹名称': {
+        'dir':[
+            'Skill的目录'
+        ]
+        'name': [
+            'Skill的名字'
+        ],
+        'description': [
+            'Skill的简介'
+        ],
+        'license': [
+            'Skill的许可证'
+        ],
+        'metadata': [
+            ''
+        ],
+        'author': [
+            'Skill的作者'
+        ],
+        'version': [
+            'Skill的版本'
+        ]
+    }
+},
     }
 }]
+Skill是一个被标准化封装,可主动调用,用于完成特定任务的能力单元,skills内可以存在多个skill,每个skill都会存在SKILL.md,用于介绍和说明Skill如何使用,大部分Skill中所写的Python模块都在 Skill的目录/scripts 中,不要修改每个Skill内的文件,除非是自己创建的
 is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像并执行和鼠标有关的操作
 程序返回(执行支持返回的操作后)格式为[{
     "type":"application",
@@ -118,7 +147,11 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
 - type为"returnTerminal"
 - arguments有command,内容为要执行的单条终端指令
 - 当前主机使用的终端为bash,使用bash指令进行操作
-- 此操作可以获取运行指令的输出内容,可以运行命令行程序程序(例如ping等)
+- 此操作可以获取运行指令的输出内容,可以运行命令行程序程序(例如ping,python等)
+读取SKILL.md操作
+- type为"readSkillMd"
+- arguments有name,内容为读取SKILL.md的对应skill名称(Skill的文件夹名称)
+- 此操作可以获取该Skill内SKILL.md的内容,用于获取该Skill的介绍和使用指南
 重点:
 - 打开软件需要先把鼠标移动到图片上的对应坐标网格坐标,再进行双次点击
 - 如果有较为复杂或需要不只一张屏幕截图的任务(如"打开B站","帮我打开开始菜单并寻找软件XXX"等)需要主动将这些任务分为小任务并使用"继续任务操作"来操作
@@ -127,12 +160,34 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
 - "终端操作"无法获得终端输出,因此不要检测是否存在此软件
 - 在每一次完成后需要使用"继续任务操作"检测任务是否完成(如果已经因为其他原因存在"继续任务操作"则忽略)
 - 在大部分场景中,输出完成内容后需要按下enter才能打开/访问/搜索/发送
+- 在大部分场景中,Skills的优先级始终高于自己
             """,
             },
         ]
         self.onAISendMessage = []
         # 初始化配置
         self.readConfig()
+        self.getSkillsInfo()
+
+    def getSkillsInfo(self):
+        try:
+            skillsDir = os.path.join(self.BASE_DIR, "skills")
+            entries = os.listdir(skillsDir)
+            for skillEntries in entries:
+                skillDir = os.path.join(skillsDir, skillEntries)
+                mdDir = os.path.join(skillDir, "SKILL.md")
+                try:
+                    with open(mdDir, "r", encoding="utf-8") as skillMd:
+                        md = Markdown(extensions=["meta"])
+                        htmlOutput = md.convert(skillMd.read())
+                        meta: Dict[str, List[str]] = getattr(md, "Meta", {})
+                        meta["dir"] = [skillDir]
+                        self.skills[skillEntries] = meta
+                except Exception as e:
+                    print(f"[Skills] 读取Skill {skillEntries} 失败: ", e)
+            print(f"[Skills] 共加载 {len(self.skills)} 个 Skills: ", self.skills)
+        except Exception as e:
+            print("[Skills] 读取全部Skills失败: ", e)
 
     def readConfig(self):
         try:
@@ -327,6 +382,15 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
                     self.sendAIMessage(
                         f"终端操作已完成,输出:{result.stdout.strip()}", "application"
                     )
+                elif controlType == "readSkillMd":
+                    skillMeta = self.skills[controlArguments["name"]]
+                    skillMdDir = os.path.join(skillMeta["dir"][0], "SKILL.md")
+                    with open(skillMdDir, "r", encoding="utf-8") as skillMd:
+                        print("[Skills读取] 已成功读取SkillMd")
+                        self.sendAIMessage(
+                            f"读取SKILL.md操作已完成,文件内容:{skillMd.read()}",
+                            "application",
+                        )
                 for handler in self.onAISendMessage:
                     handler()
         except Exception as e:
@@ -339,6 +403,7 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
                 "arguments": {
                     "content": userContent,
                     "is_multimodal": self.config["is_multimodal"],
+                    "skills": self.skills,
                 },
             }
         ]
