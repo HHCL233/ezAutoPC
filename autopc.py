@@ -34,8 +34,10 @@ class AutoPC:
     "type":"user",
     "arguments":{
         "content":"用户输入的内容",
+        "is_multimodal":true/false
     }
 }]
+is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像并执行和鼠标有关的操作
 程序返回(执行支持返回的操作后)格式为[{
     "type":"application",
     "arguments":{
@@ -197,22 +199,33 @@ class AutoPC:
             return None
 
     def sendImageToAI(self, prompt, imageSource, isLocal=True):
-        self.messages.append(
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{self.imageToBase64(imageSource)}"
-                            if isLocal
-                            else imageSource
+        if self.config["is_multimodal"]:
+            self.messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{self.imageToBase64(imageSource)}"
+                                if isLocal
+                                else imageSource
+                            },
                         },
-                    },
-                ],
-            }
-        )
+                    ],
+                }
+            )
+        else:
+            print("[警告] is_multimodal为false,因此不会发送屏幕截图")
+            self.messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                    ],
+                }
+            )
 
         try:
             self.client.api_key = self.config["api_key"]
@@ -325,6 +338,7 @@ class AutoPC:
                 "type": type,
                 "arguments": {
                     "content": userContent,
+                    "is_multimodal": self.config["is_multimodal"],
                 },
             }
         ]

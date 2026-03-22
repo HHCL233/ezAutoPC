@@ -1,5 +1,6 @@
 {
     "api_key": "",
     "model": "kimi-k2.5",
-    "base_url": "https://api.moonshot.cn/v1"
+    "base_url": "https://api.moonshot.cn/v1",
+    "is_multimodal": true
 }
