@@ -5,6 +5,7 @@ import os
 import time
 import json
 import eventlet
+from flask_cors import CORS
 
 # 抑制 eventlet 废弃警告（可选）
 import warnings
@@ -22,6 +23,7 @@ app = Flask(
     template_folder=VUE_DIST_DIR,
     static_folder=VUE_DIST_DIR,
 )
+CORS(app)
 app.config["SECRET_KEY"] = "key-1234567890"
 
 # SocketIO 初始化
@@ -51,13 +53,13 @@ def serveaAssets(filename):
 
 
 # 接口：获取所有消息
-@app.route("/api/getAllMessages")
+@app.route("/api/allMessages")
 def getAllMessages():
     return autopc.messages
 
 
 # 接口：发送消息给AI
-@app.route("/api/sendMessagesToAI", methods=["POST"])
+@app.route("/api/sendMessages", methods=["POST"])
 def sendMessagesToAI():
     payload = request.get_json(force=False, silent=True)
 
@@ -67,6 +69,37 @@ def sendMessagesToAI():
     autopc.sendAIMessage(payload.get("content"))
 
     return {"success": True, "message": "AI请求完成"}
+
+
+# 接口：写入配置
+@app.route("/api/config", methods=["PUT"])
+def putConfig():
+    try:
+        jsonConfig = request.json
+        configStr = json.dumps(jsonConfig, indent=4, ensure_ascii=False)
+        with open("config.json", encoding="utf-8", mode="w") as config:
+            config.write(configStr)
+            return {
+                "success": True,
+                "message": "配置文件写入成功",
+            }
+    except Exception as e:
+        return {"success": False, "message": f"配置文件写入失败: {e}"}
+
+
+# 接口：获取配置
+@app.route("/api/config")
+def getConfig():
+    try:
+        with open("config.json", encoding="utf-8", mode="r") as config:
+            jsonConfig = json.loads(config.read())
+            return {
+                "success": True,
+                "message": "配置文件获取成功",
+                "config": jsonConfig,
+            }
+    except Exception as e:
+        return {"success": False, "message": f"配置文件获取失败: {e}"}
 
 
 def onAISendMessage():

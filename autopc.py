@@ -196,7 +196,7 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
                 with open("config.json", "r", encoding="utf-8") as f:
                     configContent = f.read()
                     configJSON = json.loads(configContent)
-                    self.config = configJSON
+                    self.config = configJSON["autopc"]
             else:
                 print("[读取配置] config 文件不存在")
                 print("[读取配置] 启用 main 内配置")
@@ -428,7 +428,12 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
 
         ax.imshow(imgArray)
         ax.grid(
-            True, which="major", linestyle="-", linewidth=1.0, alpha=0.6, color="red"
+            True,
+            which="major",
+            linestyle="-",
+            linewidth=1.0,
+            alpha=0.6,
+            color="darkred",
         )
 
         gridStep = 50
@@ -457,7 +462,7 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
                     yPlot,
                     f"({int(x)},{int(yPlot)})",
                     fontsize=6.5,
-                    color="darkred",
+                    color="red",
                     ha="center",
                     va="center",
                     bbox=dict(

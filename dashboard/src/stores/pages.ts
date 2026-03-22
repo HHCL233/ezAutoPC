@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import SettingWebui from '@/router/Setting/Webui.vue'
-
+import SettingAutoPC from '@/router/Setting/AutoPC.vue'
 
 interface PageChild {
   path: string
@@ -42,7 +42,7 @@ export const usePagesStore = defineStore('pages', () => {
       {
         path: 'ezautopc-setting',
         title: '本体设置',
-        component: SettingWebui,
+        component: SettingAutoPC,
       }]
     }
   })
