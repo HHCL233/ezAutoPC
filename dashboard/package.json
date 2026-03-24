@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "lodash": "^4.17.23",
+    "marked": "^17.0.5",
     "mdui": "^2.1.4",
     "pinia": "^3.0.4",
     "socket.io-client": "^4.8.3",

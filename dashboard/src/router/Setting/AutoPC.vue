@@ -21,9 +21,9 @@ const savaConfig = (async () => {
         <h2>本体设置</h2>
         <mdui-list class="setting-autopc-lists">
             <mdui-list-item :headline="camelCase(`${key}`)""
-                v-for="(value, key, index) in autoPCConfigJson">
+                v-for="(value, key, index) in autoPCConfigJson" :description="config.json.descriptions[key]">
                 <mdui-text-field slot="end-icon" class="setting-autopc-list-text-field" :value="value"
-                    v-if="(typeof value) != 'boolean'"
+                    v-if="(typeof value) != 'boolean'" :autosize="(String(key).includes('lines_')) ? true : false"
                     @change="autoPCConfigJson[key] = $event.target.value"></mdui-text-field>
                 <mdui-switch v-else :checked="value" slot="end-icon"
                     @change="autoPCConfigJson[key] = ($event.target.checked)"></mdui-switch>
@@ -42,9 +42,11 @@ const savaConfig = (async () => {
 }
 
 .setting-autopc-list-text-field {
-    width: 240px;
-    height: 36px;
+    width: 480px;
+    min-height: 36px;
     cursor: text;
+    transform: scale(0.8);
+    margin-right: -48px;
 }
 
 .setting-autopc-save {
