@@ -79,6 +79,7 @@ def putConfig():
         configStr = json.dumps(jsonConfig, indent=4, ensure_ascii=False)
         with open("config.json", encoding="utf-8", mode="w") as config:
             config.write(configStr)
+            config.close()
             autopc.readConfig()
             return {
                 "success": True,
