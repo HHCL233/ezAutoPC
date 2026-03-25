@@ -5,15 +5,15 @@
         "is_multimodal": true,
         "lines_prompt": "",
         "model": "kimi-k2.5",
-        "tool_calls": false
+        "tool_calls": true
     },
-    "webui": {},
     "descriptions": {
         "api_key": "AI提供商密钥",
         "base_url": "AI提供商BaseURL",
         "is_multimodal": "多模态功能",
         "lines_prompt": "用户提示词",
         "model": "使用模型",
-        "tool_calls": "(暂无用途) 使用OpenAI规范Tools"
-    }
+        "tool_calls": "(Beta) 使用OpenAI规范ToolCalls"
+    },
+    "webui": {}
 }

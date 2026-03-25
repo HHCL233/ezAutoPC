@@ -103,11 +103,33 @@ def getConfig():
         return {"success": False, "message": f"配置文件获取失败: {e}"}
 
 
+def serialize(obj):
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    if hasattr(obj, "dict"):
+        return obj.dict()
+    if isinstance(obj, list):
+        return [serialize(item) for item in obj]
+    if isinstance(obj, dict):
+        return {key: serialize(value) for key, value in obj.items()}
+    return obj
+
+
+def serializeMessages(messages):
+    serialized = []
+    for msg in messages:
+        if hasattr(msg, "model_dump"):
+            serialized.append(msg.model_dump())
+        elif isinstance(msg, dict):
+            serialized.append(msg)
+    return serialized
+
+
 def onAISendMessage():
     emit(
         "response",
         {
-            "msg": autopc.messages,
+            "msg": serializeMessages(autopc.messages),
             "timestamp": time.time(),
             "type": "getAllMessages",
         },
@@ -137,14 +159,7 @@ def handleMessage(data):
 
     # 处理获取所有消息请求
     if jsonData["type"] == "getAllMessages":
-        emit(
-            "response",
-            {
-                "msg": autopc.messages,
-                "timestamp": time.time(),
-                "type": jsonData["type"],
-            },
-        )
+        onAISendMessage()
     # 处理发送消息给AI请求
     elif jsonData["type"] == "sendMessagesToAI":
         emit(

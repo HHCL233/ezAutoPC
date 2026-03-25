@@ -26,16 +26,9 @@ socket.on('connect', function () {
 socket.on('response', function (data) {
     console.log('收到服务端消息：', data);
     if (data['type'] == "getAllMessages") {
-        const noSystemData = Array.isArray(data.msg) ? [...data.msg] : [];
-        Object.entries(noSystemData).forEach(([indexStr, value]) => {
-            const index = Number(indexStr);
-            if (value && value.role === 'system') {
-                noSystemData.splice(index, 1);
-            } else if (value && value.role === 'user' && typeof value === 'object') {
-                value.content = value.content[0]['text']
-            }
-        });
-        messagesList.value = JSON.parse(JSON.stringify(noSystemData));
+        console.log('11', data.msg)
+        messagesList.value = JSON.parse(JSON.stringify(data.msg));
+        console.log('22', messagesList.value)
         scrollToBottom()
     } else if (data['type'] == "disabledSend") {
         if (sendButton.value && inputField.value) {
@@ -106,8 +99,7 @@ const againConnect = (errorMessage: string) => {
 </script>
 <template>
     <div class="chat" ref="chatContainer">
-        <ChatCard v-for="(message, index) in messagesList" :key="index" :messages="JSON.parse(message.content)"
-            :type="message.role" />
+        <ChatCard v-for="(message, index) in messagesList" :key="index" :messages="message" :type="message.role" />
         <div class="message-space"></div>
         <div class="controls">
             <mdui-card variant="filled" class="input">

@@ -2,8 +2,8 @@ import pyautogui
 import os
 import base64
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
-from typing import List, Dict
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
+from typing import List, Dict, Any
 import json
 import readline
 import sys
@@ -28,10 +28,178 @@ class AutoPC:
         self.skills = {}
         self.config = {}
         self.client = OpenAI(api_key=self.API_KEY, base_url=self.BASE_URL)
-        self.messages: List[ChatCompletionMessageParam] = [
+        self.tools: Any = [
             {
-                "role": "system",
-                "content": """
+                "type": "function",
+                "function": {
+                    "name": "mouse",
+                    "description": "模拟鼠标移动操作",
+                    "parameters": {
+                        "type": "object",
+                        "required": ["x", "y"],
+                        "properties": {
+                            "x": {
+                                "type": "integer",
+                                "description": "屏幕截图中网格的X坐标，{x=0,y=0}为屏幕左上角,{x=1920,y=1080}为屏幕右下角",
+                            },
+                            "y": {
+                                "type": "integer",
+                                "description": "屏幕截图中网格的Y坐标，{x=0,y=0}为屏幕左上角,{x=1920,y=1080}为屏幕右下角",
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "click",
+                    "description": "模拟鼠标单次点击操作，点击当前鼠标指针所在坐标",
+                    "parameters": {"type": "object", "required": [], "properties": {}},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "doubleClick",
+                    "description": "模拟鼠标双次点击操作，点击当前鼠标指针所在坐标",
+                    "parameters": {"type": "object", "required": [], "properties": {}},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "write",
+                    "description": "模拟输入文本操作，向处于焦点状态内的输入文本框内添加内容",
+                    "parameters": {
+                        "type": "object",
+                        "required": ["content"],
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "向主机输入的内容，不建议直接输入英文",
+                            }
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "press",
+                    "description": "模拟键盘按键点击操作，不能使用组合键",
+                    "parameters": {
+                        "type": "object",
+                        "required": ["key"],
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "模拟的键盘按键，全小写，如esc、f11、enter等",
+                            }
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "terminal",
+                    "description": "终端操作，执行单条bash指令，优先使用，可启动带有GUI的应用，不要启动命令行程序",
+                    "parameters": {
+                        "type": "object",
+                        "required": ["command"],
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "要执行的单条bash终端指令",
+                            }
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "returnTerminal",
+                    "description": "可返回终端操作，执行单条bash指令，可获取运行指令的输出内容，可运行命令行程序",
+                    "parameters": {
+                        "type": "object",
+                        "required": ["command"],
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "要执行的单条bash终端指令",
+                            }
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "readSkillMd",
+                    "description": "读取SKILL.md操作，获取对应Skill内SKILL.md的内容",
+                    "parameters": {
+                        "type": "object",
+                        "required": ["name"],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "读取SKILL.md的对应skill名称（Skill的文件夹名称）",
+                            }
+                        },
+                    },
+                },
+            },
+        ]
+        self.toolsPrompt = """
+你是一个可以操控电脑的AI模型,名字叫做ezAutoAI
+SystemPrompt为必须第一遵守的提示词
+配置格式(在SystemPrompt最下方存在)为[{
+    "arguments":{
+        "is_multimodal":true/false,
+        "prompt":"用户自定义的提示词"
+        "skills":{
+    'Skill的文件夹名称': {
+        'dir':[
+            'Skill的目录'
+        ]
+        'name': [
+            'Skill的名字'
+        ],
+        'description': [
+            'Skill的简介'
+        ],
+        'license': [
+            'Skill的许可证'
+        ],
+        'metadata': [
+            ''
+        ],
+        'author': [
+            'Skill的作者'
+        ],
+        'version': [
+            'Skill的版本'
+        ]
+    }
+},
+    }
+}]
+Skill是一个被标准化封装,可主动调用,用于完成特定任务的能力单元,skills内可以存在多个skill,每个skill都会存在SKILL.md,用于介绍和说明Skill如何使用,大部分Skill中所写的Python模块都在 Skill的目录/scripts 中,不要修改每个Skill内的文件,除非是自己创建的
+is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像并执行和鼠标有关的操作
+在 用户自定义提示词(prompt) 存在内容时,遵守 用户自定义提示词(prompt) 的内容
+当前上传了一张屏幕截图,目前需要根据图片中内容执行对应操作,鼠标的每一次移动和点击都需要精准根据图片对应位置的坐标
+坐标注意事项:
+- y=0 是屏幕最顶部
+- y=1080 是屏幕最底部
+- 在进行所有坐标有关操作时必须使用图片对应位置的坐标
+回复内容注意事项:
+- 不要使用过多的emoji
+- 回复简短
+下方为配置:
+"""
+        self.noToolsPrompt = """
 你是一个可以操控电脑的AI模型,名字叫做ezAutoAI
 SystemPrompt为必须第一遵守的提示词
 用户输入格式为[{
@@ -164,13 +332,76 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
 - 在每一次完成后需要使用"继续任务操作"检测任务是否完成(如果已经因为其他原因存在"继续任务操作"则忽略)
 - 在大部分场景中,输出完成内容后需要按下enter才能打开/访问/搜索/发送
 - 在大部分场景中,Skills的优先级始终高于自己
-            """,
-            },
+            """
+        self.messages: Any = [
+            {"role": "system", "content": self.noToolsPrompt},
         ]
         self.onAISendMessage = []
+        self.toolMap = {
+            "mouse": self.mouse,
+            "click": self.click,
+            "doubleClick": self.doubleClick,
+            "write": self.write,
+            "press": self.press,
+            "terminal": self.terminal,
+            "returnTerminal": self.returnTerminal,
+            "readSkillMd": self.readSkillMd,
+        }
         # 初始化配置
-        self.readConfig()
         self.getSkillsInfo()
+        self.readConfig()
+
+    def mouse(self, controlArguments):
+        pyautogui.FAILSAFE = False
+        pyautogui.moveTo(
+            int(controlArguments["x"]),
+            int(controlArguments["y"]),
+            duration=0,
+        )
+        print(
+            "[鼠标移动]位置",
+            controlArguments["x"],
+            ",",
+            controlArguments["y"],
+            "已移动",
+        )
+
+    def click(self, controlArguments):
+        pyautogui.click()
+        return {"success": True}
+
+    def doubleClick(self, controlArguments):
+        pyautogui.doubleClick()
+        return {"success": True}
+
+    def write(self, controlArguments):
+        pyautogui.write(controlArguments["content"])
+        return {"success": True}
+
+    def press(self, controlArguments):
+        pyautogui.press(controlArguments["key"])
+        return {"success": True}
+
+    def terminal(self, controlArguments):
+        runCommand = controlArguments["command"]
+        print("[执行命令]", runCommand)
+        thread = threading.Thread(target=self.runCommandSilently, args=(runCommand,))
+        thread.daemon = False
+        thread.start()
+        return {"success": True}
+
+    def returnTerminal(self, controlArguments):
+        runCommand = controlArguments["command"]
+        print("[执行命令]", runCommand)
+        result = subprocess.run(runCommand, shell=True, capture_output=True, text=True)
+        return {"success": True, "content": result.stdout.strip()}
+
+    def readSkillMd(self, controlArguments):
+        skillMeta = self.skills[controlArguments["name"]]
+        skillMdDir = os.path.join(skillMeta["dir"][0], "SKILL.md")
+        with open(skillMdDir, "r", encoding="utf-8") as skillMd:
+            print("[Skills读取] 已成功读取SkillMd")
+            return {"success": True, "content": skillMd.read()}
 
     def getSkillsInfo(self):
         try:
@@ -201,6 +432,30 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
                     print(configContent)
                     configJSON = json.loads(configContent)
                     self.config = configJSON["autopc"]
+                    self.client.api_key = self.config["api_key"]
+                    if self.config.get("tool_calls"):
+                        print("[警告] tool_calls模式目前不稳定")
+                        allToolsPrompt = (
+                            self.toolsPrompt
+                            + f"""
+{
+                                [
+                                    {
+                                        "arguments": {
+                                            "is_multimodal": self.config[
+                                                "is_multimodal"
+                                            ],
+                                            "prompt": self.config["lines_prompt"],
+                                            "skills": self.skills,
+                                        },
+                                    }
+                                ]
+                            }
+"""
+                        )
+                        self.messages = [
+                            {"role": "system", "content": allToolsPrompt},
+                        ]
             else:
                 print("[读取配置] config 文件不存在")
                 print("[读取配置] 启用 main 内配置")
@@ -400,6 +655,78 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
         except Exception as e:
             print("[异常]", e)
 
+    def sendToolsAIMessage(self, prompt, imageSource):
+        finish_reason = None
+        if self.config["is_multimodal"]:
+            self.messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{self.imageToBase64(imageSource)}"
+                            },
+                        },
+                    ],
+                }
+            )
+        else:
+            print("[警告] is_multimodal为false,因此不会发送屏幕截图")
+            self.messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                    ],
+                }
+            )
+        try:
+            while finish_reason is None or finish_reason == "tool_calls":
+                completion = self.client.chat.completions.create(
+                    model=self.config["model"],
+                    temperature=1,
+                    max_tokens=1000,
+                    messages=self.messages,
+                    tools=self.tools,
+                )
+                choice = completion.choices[0]
+                finish_reason = choice.finish_reason
+                message: Any = choice.message
+
+                if message.content:
+                    print("[AI回复]", message.content)
+
+                if finish_reason == "tool_calls":
+                    self.messages.append(message)
+
+                    for tool_call in message.tool_calls:
+                        tool_call_name = tool_call.function.name
+                        tool_call_arguments = json.loads(tool_call.function.arguments)
+                        tool_function = self.toolMap.get(tool_call_name)
+
+                        if tool_function:
+                            # 执行工具
+                            tool_result = tool_function(tool_call_arguments)
+
+                            self.messages.append(
+                                {
+                                    "role": "tool",
+                                    "tool_call_id": tool_call.id,
+                                    "name": tool_call_name,
+                                    "content": json.dumps(
+                                        tool_result, ensure_ascii=False
+                                    ),
+                                }
+                            )
+
+            if finish_reason == "stop" and choice.message.content:
+                # AI最终回复代码,这里不需要
+                pass
+        except Exception as e:
+            print("[异常] ", e)
+
     def sendAIMessage(self, userContent, type="user"):
         print(self.config)
         inputJson = [
@@ -417,11 +744,16 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
         screenshotPath = self.screenshot()
         if screenshotPath:
             self.imageAddLim(screenshotPath)
-            aiResponse = self.sendImageToAI(inputContent, screenshotPath)
-            print(aiResponse)
-            for handler in self.onAISendMessage:
-                handler()
-            self.handleAIMessage(aiResponse, inputContent)
+            if self.config.get("tool_calls"):
+                self.sendToolsAIMessage(userContent, screenshotPath)
+                for handler in self.onAISendMessage:
+                    handler()
+            else:
+                aiResponse = self.sendImageToAI(inputContent, screenshotPath)
+                print(aiResponse)
+                for handler in self.onAISendMessage:
+                    handler()
+                self.handleAIMessage(aiResponse, inputContent)
 
     def imageAddLim(self, path):
         img = Image.open(path)

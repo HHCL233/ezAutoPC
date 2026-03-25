@@ -3,9 +3,13 @@ import './assets/fonts/fonts.css'
 import { ref, onMounted, defineAsyncComponent } from 'vue'
 import type { NavigationDrawer } from 'mdui';
 import { usePagesStore, type PageKey } from '@/stores/pages'
+import { useConfigStore } from '@/stores/config';
 
+const config = useConfigStore()
 const pages = usePagesStore()
 const itemsDrawer = ref<NavigationDrawer | null>(null)
+
+config.getConfig()
 
 const openItemsDrawer = (() => {
   itemsDrawer.value!.open = true;
@@ -26,7 +30,7 @@ const pushPage = ((name: PageKey) => {
   <mdui-navigation-drawer close-on-overlay-click class="items-drawer" modal ref="itemsDrawer">
     <mdui-list>
       <mdui-list-item rounded v-for="(value, key, index) in pages.pageList" @click="pushPage(key)">{{ value.title
-        }}</mdui-list-item>
+      }}</mdui-list-item>
     </mdui-list>
   </mdui-navigation-drawer>
   <RouterView />
