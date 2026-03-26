@@ -18,18 +18,17 @@ const inputField = ref<TextField | null>(null)
 const sendButton = ref<ButtonIcon | null>(null)
 const chatContainer = ref(null)
 
-socket.on('connect', function () {
+socket.on('connect', () => {
     console.log('已成功连接到 WS 服务端');
     socket.emit('message', JSON.stringify({ 'type': 'getAllMessages' }));
 });
 
-socket.on('response', function (data) {
+socket.on('response', (data) => {
     console.log('收到服务端消息：', data);
     if (data['type'] == "getAllMessages") {
         console.log('11', data.msg)
         messagesList.value = data.msg;
         console.log('22', messagesList.value)
-        scrollToBottom()
     } else if (data['type'] == "disabledSend") {
         if (sendButton.value && inputField.value) {
             sendButton.value.disabled = true;
@@ -41,9 +40,10 @@ socket.on('response', function (data) {
             inputField.value.disabled = false;
         }
     }
+    scrollToBottom()
 });
 
-socket.on('disconnect', function (reason) {
+socket.on('disconnect', (reason) => {
     let code = 1006;
     if (reason === 'io server disconnect') code = 1000;
     againConnect(reason)
@@ -96,6 +96,10 @@ const againConnect = (errorMessage: string) => {
         ]
     });
 }
+
+onMounted(() => {
+    scrollToBottom()
+})
 </script>
 <template>
     <div class="chat" ref="chatContainer">
@@ -119,6 +123,8 @@ const againConnect = (errorMessage: string) => {
     max-width: 720px;
     min-width: 75%;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .controls {

@@ -15,5 +15,8 @@
         "model": "使用模型",
         "tool_calls": "(Beta) 使用OpenAI规范ToolCalls"
     },
+    "tips": [
+        "WoW!"
+    ],
     "webui": {}
 }

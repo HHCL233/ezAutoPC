@@ -154,7 +154,6 @@ class AutoPC:
         ]
         self.toolsPrompt = """
 你是一个可以操控电脑的AI模型,名字叫做ezAutoAI
-SystemPrompt为必须第一遵守的提示词
 配置格式(在SystemPrompt最下方存在)为[{
     "arguments":{
         "is_multimodal":true/false,
@@ -188,7 +187,7 @@ SystemPrompt为必须第一遵守的提示词
 }]
 Skill是一个被标准化封装,可主动调用,用于完成特定任务的能力单元,skills内可以存在多个skill,每个skill都会存在SKILL.md,用于介绍和说明Skill如何使用,大部分Skill中所写的Python模块都在 Skill的目录/scripts 中,不要修改每个Skill内的文件,除非是自己创建的
 is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像并执行和鼠标有关的操作
-在 用户自定义提示词(prompt) 存在内容时,遵守 用户自定义提示词(prompt) 的内容
+在 用户自定义提示词(prompt) 存在内容时,同时遵守 用户自定义提示词(prompt) 和 SystemPrompt 的内容,不可以违反 用户自定义提示词(prompt),即使是在执行和Tools有关的操作
 当前上传了一张屏幕截图,目前需要根据图片中内容执行对应操作,鼠标的每一次移动和点击都需要精准根据图片对应位置的坐标
 坐标注意事项:
 - y=0 是屏幕最顶部
@@ -201,7 +200,6 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
 """
         self.noToolsPrompt = """
 你是一个可以操控电脑的AI模型,名字叫做ezAutoAI
-SystemPrompt为必须第一遵守的提示词
 用户输入格式为[{
     "type":"user",
     "arguments":{
@@ -237,7 +235,7 @@ SystemPrompt为必须第一遵守的提示词
 }]
 Skill是一个被标准化封装,可主动调用,用于完成特定任务的能力单元,skills内可以存在多个skill,每个skill都会存在SKILL.md,用于介绍和说明Skill如何使用,大部分Skill中所写的Python模块都在 Skill的目录/scripts 中,不要修改每个Skill内的文件,除非是自己创建的
 is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像并执行和鼠标有关的操作
-在 用户自定义提示词(prompt) 存在内容时,遵守 用户自定义提示词(prompt) 的内容
+在 用户自定义提示词(prompt) 存在内容时,同时遵守 用户自定义提示词(prompt) 和 SystemPrompt 的内容,不可以违反 用户自定义提示词(prompt),即使是在执行和Tools有关的操作
 程序返回(执行支持返回的操作后)格式为[{
     "type":"application",
     "arguments":{
@@ -397,11 +395,15 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
         return {"success": True, "content": result.stdout.strip()}
 
     def readSkillMd(self, controlArguments):
-        skillMeta = self.skills[controlArguments["name"]]
-        skillMdDir = os.path.join(skillMeta["dir"][0], "SKILL.md")
-        with open(skillMdDir, "r", encoding="utf-8") as skillMd:
-            print("[Skills读取] 已成功读取SkillMd")
-            return {"success": True, "content": skillMd.read()}
+        try:
+            skillMeta = self.skills[controlArguments["name"]]
+            skillMdDir = os.path.join(skillMeta["dir"][0], "SKILL.md")
+            with open(skillMdDir, "r", encoding="utf-8") as skillMd:
+                print("[Skills读取] 已成功读取SkillMd")
+                return {"success": True, "content": skillMd.read()}
+        except Exception as e:
+            print("[Skills读取] ", e)
+            return {"success": False, "content": f"遇到了错误: {e}"}
 
     def getSkillsInfo(self):
         try:
@@ -695,20 +697,21 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
                 finish_reason = choice.finish_reason
                 message: Any = choice.message
 
-                if message.content:
-                    print("[AI回复]", message.content)
+                if message:
                     self.messages.append(message)
+
+                if message.content and finish_reason != "tool_calls":
+                    print("[AI回复]", message.content)
 
                 if finish_reason == "tool_calls":
                     for tool_call in message.tool_calls:
                         tool_call_name = tool_call.function.name
                         tool_call_arguments = json.loads(tool_call.function.arguments)
                         tool_function = self.toolMap.get(tool_call_name)
-
                         if tool_function:
                             # 执行工具
                             tool_result = tool_function(tool_call_arguments)
-
+                            print(tool_result)
                             self.messages.append(
                                 {
                                     "role": "tool",
@@ -719,7 +722,8 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
                                     ),
                                 }
                             )
-
+                for handler in self.onAISendMessage:
+                    handler()
             if finish_reason == "stop" and choice.message.content:
                 # AI最终回复代码,这里不需要
                 pass
@@ -745,14 +749,12 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
             self.imageAddLim(screenshotPath)
             if self.config.get("tool_calls"):
                 self.sendToolsAIMessage(userContent, screenshotPath)
-                for handler in self.onAISendMessage:
-                    handler()
             else:
                 aiResponse = self.sendImageToAI(inputContent, screenshotPath)
                 print(aiResponse)
-                for handler in self.onAISendMessage:
-                    handler()
                 self.handleAIMessage(aiResponse, inputContent)
+            for handler in self.onAISendMessage:
+                handler()
 
     def imageAddLim(self, path):
         img = Image.open(path)
