@@ -27,7 +27,7 @@ socket.on('response', function (data) {
     console.log('收到服务端消息：', data);
     if (data['type'] == "getAllMessages") {
         console.log('11', data.msg)
-        messagesList.value = JSON.parse(JSON.stringify(data.msg));
+        messagesList.value = data.msg;
         console.log('22', messagesList.value)
         scrollToBottom()
     } else if (data['type'] == "disabledSend") {

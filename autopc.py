@@ -697,10 +697,9 @@ is_multimodal对应一个布尔值,代表在当前对话中是否能识别图像
 
                 if message.content:
                     print("[AI回复]", message.content)
-
-                if finish_reason == "tool_calls":
                     self.messages.append(message)
 
+                if finish_reason == "tool_calls":
                     for tool_call in message.tool_calls:
                         tool_call_name = tool_call.function.name
                         tool_call_arguments = json.loads(tool_call.function.arguments)

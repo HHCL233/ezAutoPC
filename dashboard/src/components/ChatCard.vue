@@ -35,8 +35,7 @@ console.log(config)
                 <div class="message-content" v-if="messages.role == 'user'">
                     {{ messages.content[0]['text'] }}
                 </div>
-                <div class="message-content" v-if="messages.role == 'assistant'">
-                    {{ messages.content }}
+                <div class="message-content" v-if="messages.role == 'assistant'" v-html="marked(messages.content)">
                 </div>
                 <mdui-card variant="outlined" v-if="messages.role == 'assistant'"
                     v-for="(value, index) in messages.tool_calls" class="message-nomessage-content">

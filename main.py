@@ -119,10 +119,17 @@ def serialize(obj):
 def serializeMessages(messages):
     serialized = []
     for msg in messages:
-        if hasattr(msg, "model_dump"):
-            serialized.append(msg.model_dump())
-        elif isinstance(msg, dict):
-            serialized.append(msg)
+        try:
+            if hasattr(msg, "model_dump"):
+                serialized.append(msg.model_dump())
+            elif isinstance(msg, dict):
+                serialized.append(msg)
+            elif hasattr(msg, "__dict__"):
+                serialized.append(msg.__dict__)
+            else:
+                serialized.append(str(msg))
+        except Exception:
+            serialized.append({"role": "assistant", "content": str(msg)})
     return serialized
 
 
