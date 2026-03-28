@@ -26,13 +26,13 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 autopc = AutoPC()
 
 
-# 路由：首页
+# 路由:首页
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
-# 路由：静态资源
+# 路由:静态资源
 @app.route("/assets/<path:filename>")
 def serveaAssets(filename):
     assetsDir = os.path.join(VUE_DIST_DIR, "assets")
@@ -42,7 +42,7 @@ def serveaAssets(filename):
     return send_from_directory(assetsDir, filename)
 
 
-# 接口：发送消息给AI
+# 接口:发送消息给AI
 @app.route("/api/sendMessages", methods=["POST"])
 def sendMessagesToAI():
     payload = request.get_json(force=False, silent=True)
@@ -50,12 +50,12 @@ def sendMessagesToAI():
     if payload is None:
         return {"success": False, "message": "无效的 JSON 负载"}, 400
 
-    autopc.sendAIMessage(payload.get("content"))
+    autopc.send_ai_message(payload.get("content"))
 
     return {"success": True, "message": "AI请求完成"}
 
 
-# 接口：写入配置
+# 接口:写入配置
 @app.route("/api/config", methods=["PUT"])
 def putConfig():
     try:
@@ -64,7 +64,7 @@ def putConfig():
         with open("config.json", encoding="utf-8", mode="w") as config:
             config.write(configStr)
             config.close()
-            autopc.readConfig()
+            autopc.read_config()
             return {
                 "success": True,
                 "message": "配置文件写入成功",
@@ -73,7 +73,7 @@ def putConfig():
         return {"success": False, "message": f"配置文件写入失败: {e}"}
 
 
-# 接口：获取配置
+# 接口:获取配置
 @app.route("/api/config")
 def getConfig():
     try:
@@ -109,26 +109,26 @@ def onAISendMessage():
     emit(
         "response",
         {
-            "msg": serializeMessages(autopc.fullMessages),
+            "msg": serializeMessages(autopc.full_messages),
             "timestamp": time.time(),
             "type": "getAllMessages",
-            "token": (autopc.getMessagesToken())["token"],
+            "token": (autopc.get_messages_token())["token"],
         },
         broadcast=True,
     )
 
 
-# SocketIO：客户端连接
+# SocketIO:客户端连接
 @socketio.on("connect")
 def handleConnect():
     print("新的客户端已连接")
     emit("response", {"msg": "已连接成功"})
 
 
-# SocketIO：处理消息
+# SocketIO:处理消息
 @socketio.on("message")
 def handleMessage(data):
-    print(f"收到客户端的消息：{data}")
+    print(f"收到客户端的消息:{data}")
     try:
         jsonData = json.loads(data)
     except json.JSONDecodeError:
@@ -155,7 +155,7 @@ def handleMessage(data):
             )
             return
 
-        autopc.sendAIMessage(content)
+        autopc.send_ai_message(content)
         emit(
             "response",
             {
@@ -166,7 +166,7 @@ def handleMessage(data):
         )
 
 
-# SocketIO：客户端断开
+# SocketIO:客户端断开
 @socketio.on("disconnect")
 def handleDisconnect():
     print("客户端已断开连接")
@@ -179,8 +179,8 @@ if __name__ == "__main__":
 
     if os.path.exists(indexHtmlPath):
         print("WebUI文件检测成功,启动Web服务...")
-        autopc.onAISendMessage.append(onAISendMessage)
+        autopc.on_ai_send_message.append(onAISendMessage)
         socketio.run(app, host="0.0.0.0", port=5000, debug=True)
     else:
         print("[警告] 未检测到WebUI文件,启动终端模式")
-        autopc.mainLoop()
+        autopc.main_loop()

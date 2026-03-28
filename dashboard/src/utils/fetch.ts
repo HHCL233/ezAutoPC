@@ -10,7 +10,7 @@ export async function generalFetch(url = "", data = {}) {
             const response = await fetch(`http://${location.host}/${url}`, data);
             return response
         } catch (error2) {
-            throw new Error(`所有请求端点均失败,最后错误：${error2}`);
+            throw new Error(`所有请求端点均失败,最后错误:${error2}`);
         }
     }
 
@@ -37,7 +37,7 @@ export function generalWS(url = "", errorCallback?: () => void) {
             if (errorCallback) {
                 errorCallback()
             }
-            throw new Error(`所有IO请求端点均失败,最后错误：${error2}`);
+            throw new Error(`所有IO请求端点均失败,最后错误:${error2}`);
         }
     }
 

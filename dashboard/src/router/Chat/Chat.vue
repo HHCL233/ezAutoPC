@@ -24,7 +24,7 @@ socket.on('connect', () => {
 });
 
 socket.on('response', (data) => {
-    console.log('收到服务端消息：', data);
+    console.log('收到服务端消息:', data);
     if (data['type'] == "getAllMessages") {
         messagesList.value = data.msg;
         console.log("当前Token:" + data.token)
