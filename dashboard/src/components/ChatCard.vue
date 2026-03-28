@@ -3,7 +3,7 @@ import { marked } from 'marked';
 import { useConfigStore } from '@/stores/config';
 import { onMounted } from 'vue';
 
-let config: any = useConfigStore()
+const config: any = useConfigStore()
 const props = defineProps([
     'messages',
     'type'

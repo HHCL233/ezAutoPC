@@ -2,7 +2,11 @@ import pyautogui
 import os
 import base64
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ChatCompletionMessage,
+    ChatCompletionToolParam,
+)
 from typing import List, Dict, Any
 import json
 import readline
@@ -32,7 +36,7 @@ class AutoPC:
         self.skills = {}
         self.config = {}
         self.client = OpenAI(api_key=self.API_KEY, base_url=self.BASE_URL)
-        self.tools: Any = [
+        self.tools: list[ChatCompletionToolParam] = [
             {
                 "type": "function",
                 "function": {
