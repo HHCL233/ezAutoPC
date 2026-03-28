@@ -15,6 +15,10 @@ onMounted(async () => {
 const savaConfig = (async () => {
     await ApiFetch.saveConfig(config['json'])
 })
+
+function convertByOriginalType(value: any, originalValue: any) {
+    return originalValue.constructor(value);
+}
 </script>
 <template>
     <div class="setting-autopc">
@@ -23,10 +27,11 @@ const savaConfig = (async () => {
             <mdui-list-item :headline="camelCase(`${key}`)""
                 v-for="(value, key, index) in autoPCConfigJson" :description="config.json.descriptions[key]">
                 <mdui-text-field slot="end-icon" class="setting-autopc-list-text-field" :value="value"
-                    v-if="(typeof value) != 'boolean'" :autosize="(String(key).includes('lines_')) ? true : false"
-                    @change="autoPCConfigJson[key] = $event.target.value"></mdui-text-field>
+                    v-if="(typeof value) != 'boolean'" :type="typeof value == 'number' ? 'number' : 'text'"
+                    :autosize="(String(key).includes('lines_')) ? true : false"
+                    @change="autoPCConfigJson[key] = convertByOriginalType($event.target.value, autoPCConfigJson[key])"></mdui-text-field>
                 <mdui-switch v-else :checked="value" slot="end-icon"
-                    @change="autoPCConfigJson[key] = ($event.target.checked)"></mdui-switch>
+                    @change="autoPCConfigJson[key] = convertByOriginalType($event.target.checked, autoPCConfigJson[key])"></mdui-switch>
             </mdui-list-item>
         </mdui-list>
         <mdui-fab icon="save" class="setting-autopc-save" @click="savaConfig()"></mdui-fab>
@@ -43,10 +48,7 @@ const savaConfig = (async () => {
 
 .setting-autopc-list-text-field {
     width: 480px;
-    min-height: 36px;
     cursor: text;
-    transform: scale(0.8);
-    margin-right: -48px;
 }
 
 .setting-autopc-save {

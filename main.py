@@ -52,12 +52,6 @@ def serveaAssets(filename):
     return send_from_directory(assetsDir, filename)
 
 
-# 接口：获取所有消息
-@app.route("/api/allMessages")
-def getAllMessages():
-    return autopc.messages
-
-
 # 接口：发送消息给AI
 @app.route("/api/sendMessages", methods=["POST"])
 def sendMessagesToAI():
@@ -104,18 +98,6 @@ def getConfig():
         return {"success": False, "message": f"配置文件获取失败: {e}"}
 
 
-def serialize(obj):
-    if hasattr(obj, "model_dump"):
-        return obj.model_dump()
-    if hasattr(obj, "dict"):
-        return obj.dict()
-    if isinstance(obj, list):
-        return [serialize(item) for item in obj]
-    if isinstance(obj, dict):
-        return {key: serialize(value) for key, value in obj.items()}
-    return obj
-
-
 def serializeMessages(messages):
     serialized = []
     for msg in messages:
@@ -137,9 +119,10 @@ def onAISendMessage():
     emit(
         "response",
         {
-            "msg": serializeMessages(autopc.messages),
+            "msg": serializeMessages(autopc.fullMessages),
             "timestamp": time.time(),
             "type": "getAllMessages",
+            "token": (autopc.getMessagesToken())["token"],
         },
         broadcast=True,
     )

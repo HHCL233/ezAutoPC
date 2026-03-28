@@ -26,9 +26,8 @@ socket.on('connect', () => {
 socket.on('response', (data) => {
     console.log('收到服务端消息：', data);
     if (data['type'] == "getAllMessages") {
-        console.log('11', data.msg)
         messagesList.value = data.msg;
-        console.log('22', messagesList.value)
+        console.log("当前Token:" + data.token)
     } else if (data['type'] == "disabledSend") {
         if (sendButton.value && inputField.value) {
             sendButton.value.disabled = true;

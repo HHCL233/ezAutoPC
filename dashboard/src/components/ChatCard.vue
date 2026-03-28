@@ -35,8 +35,16 @@ console.log(config)
                 <div class="message-content" v-if="messages.role == 'user'">
                     {{ messages.content[0]['text'] }}
                 </div>
+                <mdui-card variant="outlined"
+                    v-if="messages.role == 'assistant' && config.config?.autopc?.thinking == true && messages.name != 'system_notice'"
+                    class="message-nomessage-content" clickable>
+                    <mdui-collapse>
+                        <mdui-collapse-item header="思考内容: "
+                            v-html="marked(messages.reasoning_content ?? '')"></mdui-collapse-item>
+                    </mdui-collapse>
+                </mdui-card>
                 <div class="message-content" v-if="messages.role == 'assistant'"
-                    v-html="marked((messages.content == '') ? messages.reasoning_content : messages.content)">
+                    v-html="marked((messages.content) ?? '')">
                 </div>
                 <mdui-card variant="outlined" v-if="messages.role == 'assistant'"
                     v-for="(value, index) in messages.tool_calls" class="message-nomessage-content">

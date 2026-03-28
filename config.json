@@ -2,17 +2,23 @@
     "autopc": {
         "api_key": "",
         "base_url": "https://api.moonshot.cn/v1",
+        "context_window": 128000,
         "is_multimodal": true,
         "lines_prompt": "",
         "model": "kimi-k2.5",
+        "temperature": "1",
+        "thinking": true,
         "tool_calls": true
     },
     "descriptions": {
         "api_key": "AI提供商密钥",
         "base_url": "AI提供商BaseURL",
+        "context_window": "模型上下文最高Token,接近该值后将自动压缩Token",
         "is_multimodal": "多模态功能",
         "lines_prompt": "用户提示词",
         "model": "使用模型",
+        "temperature": "温度设置",
+        "thinking": "模型思考功能",
         "tool_calls": "(Beta) 使用OpenAI规范ToolCalls"
     },
     "tips": [
