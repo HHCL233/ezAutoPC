@@ -4,14 +4,7 @@ from flask_socketio import SocketIO, emit
 import os
 import time
 import json
-import eventlet
 from flask_cors import CORS
-
-# 抑制 eventlet 废弃警告（可选）
-import warnings
-
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="eventlet")
-eventlet.monkey_patch()
 
 # 路径配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,10 +20,7 @@ CORS(app)
 app.config["SECRET_KEY"] = "key-1234567890"
 
 # SocketIO 初始化
-try:
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
-except ValueError:
-    socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # 业务类实例化
 autopc = AutoPC()
