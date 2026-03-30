@@ -1,6 +1,6 @@
 {
     "autopc": {
-        "api_key": "sk-CLn5iDYRJh0q1DgCzN2KT43xoRIj1rydNJkhNXQcitbp9kNf",
+        "api_key": "",
         "base_url": "https://api.moonshot.cn/v1",
         "context_window": 128000,
         "is_multimodal": true,
@@ -19,7 +19,7 @@
         "model": "使用模型",
         "temperature": "温度设置",
         "thinking": "模型思考功能",
-        "tool_calls": "(Beta) 使用OpenAI规范ToolCalls"
+        "tool_calls": "(不建议改变) 使用OpenAI规范ToolCalls"
     },
     "tips": [
         "WoW!"

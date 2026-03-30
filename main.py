@@ -5,7 +5,12 @@ import os
 import time
 import json
 from flask_cors import CORS
-from termcolor import colored
+import sys
+from pathlib import Path
+
+# 自动添加包
+ROOT = Path(__file__).parent
+sys.path.insert(0, str(ROOT))
 
 # 路径配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

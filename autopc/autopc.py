@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
 from termcolor import colored
+import inspect
 
 from .prompts import TOOLS_PROMPT, NO_TOOLS_PROMPT, RECAP_PROMPT
 from .tools import TOOLS
@@ -24,24 +25,33 @@ from .utils import (
     terminal_action,
     return_terminal_action,
 )
+from .plugins import PluginsManager
 
 
 class AutoPC:
     # 类常量定义
     BASE_DIR = os.getcwd()
 
+    # 设置单例
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
         # Logo输出
-        logoASCII = r""" _______       ________      ________      ___  ___      _________    ________      ________    ________     
+        logoASCII = r""" 
+_______       ________      ________      ___  ___      _________    ________      ________    ________     
 |\  ___ \     |\_____  \    |\   __  \    |\  \|\  \    |\___   ___\ |\   __  \    |\   __  \  |\   ____\    
 \ \   __/|     \|___/  /|   \ \  \|\  \   \ \  \\\  \   \|___ \  \_| \ \  \|\  \   \ \  \|\  \ \ \  \___|    
  \ \  \_|/__       /  / /    \ \   __  \   \ \  \\\  \       \ \  \   \ \  \\\  \   \ \   ____\ \ \  \       
   \ \  \_|\ \     /  /_/__    \ \  \ \  \   \ \  \\\  \       \ \  \   \ \  \\\  \   \ \  \___|  \ \  \____  
    \ \_______\   |\________\   \ \__\ \__\   \ \_______\       \ \__\   \ \_______\   \ \__\      \ \_______\
     \|_______|    \|_______|    \|__|\|__|    \|_______|        \|__|    \|_______|    \|__|       \|_______|
-                                                                                                             
-                                                                                                             
-                                                                                                             """
+
+    """
         print(colored(logoASCII, "blue"))
 
         # 初始化实例变量
@@ -51,6 +61,7 @@ class AutoPC:
         self.tools: list = TOOLS
         self.on_ai_send_message = []
         self.allow_tools = []
+        self.commands = {}
 
         # 初始化
         self.read_config()
@@ -157,7 +168,7 @@ class AutoPC:
     def try_recap_messages(self):
         token = self.get_messages_token()
         if token["token"] >= (int(self.config["context_window"]) * 0.9):
-            self.full_messages.append(
+            self.push_messages(
                 {
                     "role": "assistant",
                     "name": "system_notice",
@@ -168,7 +179,7 @@ class AutoPC:
             print("[压缩Token] 达到Token上限,开始总结")
             self.recap_messages()
             current_token = self.get_messages_token()
-            self.full_messages.append(
+            self.push_messages(
                 {
                     "role": "assistant",
                     "name": "system_notice",
@@ -202,8 +213,7 @@ class AutoPC:
                     },
                 ],
             }
-            self.messages.append(new_messages)
-            self.full_messages.append(new_messages)
+            self.push_messages(new_messages)
         else:
             print("[警告] is_multimodal为false,因此不会发送屏幕截图")
             new_messages = {
@@ -211,8 +221,7 @@ class AutoPC:
                 "name": "user",
                 "content": [{"type": "text", "text": prompt}],
             }
-            self.messages.append(new_messages)
-            self.full_messages.append(new_messages)
+            self.push_messages(new_messages)
 
         try:
             self.client.api_key = self.config["api_key"]
@@ -232,18 +241,14 @@ class AutoPC:
                 "role": "assistant",
                 "content": response.choices[0].message.content,
             }
-            self.messages.append(new_msg)
-            self.full_messages.append(new_msg)
+            self.push_messages(new_msg)
             return response.choices[0].message.content
 
         except Exception as e:
             error_str = json.dumps(
                 [{"type": "error", "arguments": {"content": f"请求失败:{str(e)}"}}]
             )
-            self.messages.append(
-                {"role": "assistant", "name": "system_notice", "content": error_str}
-            )
-            self.full_messages.append(
+            self.push_messages(
                 {"role": "assistant", "name": "system_notice", "content": error_str}
             )
             return error_str
@@ -294,22 +299,7 @@ class AutoPC:
     def send_tools_ai_message(self, prompt, image_source):
         finish_reason = None
         if self.config["is_multimodal"]:
-            self.messages.append(
-                {
-                    "role": "user",
-                    "name": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{image_to_base64(image_source)}"
-                            },
-                        },
-                    ],
-                }
-            )
-            self.full_messages.append(
+            self.push_messages(
                 {
                     "role": "user",
                     "name": "user",
@@ -326,14 +316,7 @@ class AutoPC:
             )
         else:
             print("[警告] is_multimodal为false,因此不会发送屏幕截图")
-            self.messages.append(
-                {
-                    "role": "user",
-                    "name": "user",
-                    "content": [{"type": "text", "text": prompt}],
-                }
-            )
-            self.full_messages.append(
+            self.push_messages(
                 {
                     "role": "user",
                     "name": "user",
@@ -360,8 +343,7 @@ class AutoPC:
                 message: Any = choice.message
 
                 if message:
-                    self.messages.append(message)
-                    self.full_messages.append(message)
+                    self.push_messages(message)
 
                 if message.content and finish_reason != "tool_calls":
                     print("[AI回复]", message.content)
@@ -381,17 +363,7 @@ class AutoPC:
                                     "error": "此操作不在允许清单内",
                                 }
                             print(tool_result)
-                            self.messages.append(
-                                {
-                                    "role": "tool",
-                                    "tool_call_id": tool_call.id,
-                                    "name": tool_call_name,
-                                    "content": json.dumps(
-                                        tool_result, ensure_ascii=False
-                                    ),
-                                }
-                            )
-                            self.full_messages.append(
+                            self.push_messages(
                                 {
                                     "role": "tool",
                                     "tool_call_id": tool_call.id,
@@ -406,10 +378,7 @@ class AutoPC:
                 self.on_ai_send_message_handler()
         except Exception as e:
             print("[异常] ", e)
-            self.messages.append(
-                {"name": "system_notice", "role": "assistant", "content": f"[异常] {e}"}
-            )
-            self.full_messages.append(
+            self.push_messages(
                 {"name": "system_notice", "role": "assistant", "content": f"[异常] {e}"}
             )
             self.on_ai_send_message_handler()
@@ -431,13 +400,43 @@ class AutoPC:
         screenshot_path = screenshot()
         if screenshot_path:
             image_add_lim(screenshot_path)
-            if self.config.get("tool_calls"):
+            if user_content.split()[0] in self.commands.keys():
+                self.do_command(user_content)
+            elif self.config.get("tool_calls"):
                 self.send_tools_ai_message(user_content, screenshot_path)
             else:
                 ai_response = self.send_image_to_ai(input_content, screenshot_path)
                 print(ai_response)
                 self.handle_ai_message(ai_response, input_content)
             self.try_recap_messages()
+            self.on_ai_send_message_handler()
+
+    def do_command(self, command):
+        self.push_messages(
+            {
+                "role": "user",
+                "name": "user",
+                "content": [{"type": "text", "text": command}],
+            }
+        )
+        self.on_ai_send_message_handler()
+        command_list = command.split()
+        if command_list[0] in self.commands.keys():
+            control = self.commands[command_list[0]]
+            parameters_len = len(inspect.signature(control).parameters)
+            if parameters_len > 0:
+                if len(command_list) == parameters_len:
+                    msg = control(*command_list)
+                    self.push_messages({"role": "assistant", "content": msg})
+                else:
+                    self.push_messages(
+                        {
+                            "role": "assistant",
+                            "content": f"[异常] 指令 {command_list[0]} 应获得 {parameters_len - 1} 个参数",
+                        }
+                    )
+            else:
+                msg = control()
             self.on_ai_send_message_handler()
 
     def main_loop(self):
@@ -452,6 +451,7 @@ class AutoPC:
         # 初始化管理器
         self.config_manager = ConfigManager()
         self.skills_manager = SkillsManager(self.BASE_DIR)
+        self.plugins_manager = PluginsManager(self)
 
         # 初始化配置和技能
         self.config = self.config_manager.read_config(self.BASE_DIR)
@@ -464,6 +464,9 @@ class AutoPC:
         self.messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
         self.full_messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
 
+        # 加载插件
+        self.plugins_manager.load_plugins()
+
         self._init_prompts()
 
     def allow_tool(self, tool_name):
@@ -475,3 +478,7 @@ class AutoPC:
         if tool_name in self.allow_tools:
             self.allow_tools.remove(tool_name)
             print(f"[权限管理] 在本对话中已拒绝使用 {tool_name}")
+
+    def push_messages(self, message):
+        self.messages.append(message)
+        self.full_messages.append(message)
