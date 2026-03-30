@@ -5,6 +5,7 @@ import os
 import time
 import json
 from flask_cors import CORS
+from termcolor import colored
 
 # 路径配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,11 @@ CORS(app)
 app.config["SECRET_KEY"] = "key-1234567890"
 
 # SocketIO 初始化
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="threading",
+)
 
 # 业务类实例化
 autopc = AutoPC()
@@ -193,12 +198,13 @@ def handleDisconnect():
 # 主函数
 if __name__ == "__main__":
     indexHtmlPath = os.path.join(VUE_DIST_DIR, "index.html")
-    print(f"检查index.html路径: {indexHtmlPath}")
+    print(f"[WebUI] 检查WebUI路径: {indexHtmlPath}")
 
     if os.path.exists(indexHtmlPath):
-        print("WebUI文件检测成功,启动Web服务...")
+        print("[WebUI] WebUI文件检测成功,启动Web服务...")
         autopc.on_ai_send_message.append(onAISendMessage)
-        socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+        socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=False)
     else:
-        print("[警告] 未检测到WebUI文件,启动终端模式")
-        autopc.main_loop()
+        print("[警告] 未检测到WebUI文件")
+        print(f"[警告] 请在目录 {indexHtmlPath} 安装WebUI文件!")
+        os._exit(0)

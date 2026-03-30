@@ -4,6 +4,7 @@ from time import sleep
 from typing import List, Dict, Any
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
+from termcolor import colored
 
 from .prompts import TOOLS_PROMPT, NO_TOOLS_PROMPT, RECAP_PROMPT
 from .tools import TOOLS
@@ -30,6 +31,19 @@ class AutoPC:
     BASE_DIR = os.getcwd()
 
     def __init__(self):
+        # Logo输出
+        logoASCII = r""" _______       ________      ________      ___  ___      _________    ________      ________    ________     
+|\  ___ \     |\_____  \    |\   __  \    |\  \|\  \    |\___   ___\ |\   __  \    |\   __  \  |\   ____\    
+\ \   __/|     \|___/  /|   \ \  \|\  \   \ \  \\\  \   \|___ \  \_| \ \  \|\  \   \ \  \|\  \ \ \  \___|    
+ \ \  \_|/__       /  / /    \ \   __  \   \ \  \\\  \       \ \  \   \ \  \\\  \   \ \   ____\ \ \  \       
+  \ \  \_|\ \     /  /_/__    \ \  \ \  \   \ \  \\\  \       \ \  \   \ \  \\\  \   \ \  \___|  \ \  \____  
+   \ \_______\   |\________\   \ \__\ \__\   \ \_______\       \ \__\   \ \_______\   \ \__\      \ \_______\
+    \|_______|    \|_______|    \|__|\|__|    \|_______|        \|__|    \|_______|    \|__|       \|_______|
+                                                                                                             
+                                                                                                             
+                                                                                                             """
+        print(colored(logoASCII, "blue"))
+
         # 初始化实例变量
         self.skills = {}
         self.config = {}

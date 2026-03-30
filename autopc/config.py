@@ -20,7 +20,6 @@ class ConfigManager:
                 print("[读取配置] config 文件存在,开始读取文件内容...")
                 with open(config_path, "r", encoding="utf-8") as f:
                     config_content = f.read()
-                    print(config_content)
                     config_json = json.loads(config_content)
                     return config_json["autopc"]
             else:

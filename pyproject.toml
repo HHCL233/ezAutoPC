@@ -19,6 +19,7 @@ dependencies = [
     "pyreadline3>=3.5.4",
     "pywayland>=0.4.18",
     "requests>=2.33.0",
+    "termcolor>=3.3.0",
     "tiktoken>=0.12.0",
     "tqdm>=4.67.3",
     "urllib3==1.26.18",
