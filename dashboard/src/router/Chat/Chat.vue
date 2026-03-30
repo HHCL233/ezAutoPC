@@ -7,64 +7,13 @@ import { generalWS } from '@/utils/fetch';
 import type { TextField } from 'mdui/components/text-field.js';
 import type { ButtonIcon } from 'mdui/components/button-icon.js';
 import { dialog } from 'mdui/functions/dialog.js';
-
-const pages = usePagesStore()
-const messagesList = ref<any>([])
-
-const socket = generalWS("")
-const currentMessage = ref('')
+import { useChatSocket } from '@/composables/useChatSocket';
+import { values } from 'lodash';
 
 const inputField = ref<TextField | null>(null)
 const sendButton = ref<ButtonIcon | null>(null)
 const chatContainer = ref(null)
-
-socket.on('connect', () => {
-    console.log('已成功连接到 WS 服务端');
-    socket.emit('message', JSON.stringify({ 'type': 'getAllMessages' }));
-});
-
-socket.on('response', (data) => {
-    console.log('收到服务端消息:', data);
-    if (data['type'] == "getAllMessages") {
-        messagesList.value = data.msg;
-        console.log("当前Token:" + data.token)
-    } else if (data['type'] == "disabledSend") {
-        if (sendButton.value && inputField.value) {
-            sendButton.value.disabled = true;
-            inputField.value.disabled = true;
-        }
-    } else if (data['type'] == "enableSend") {
-        if (sendButton.value && inputField.value) {
-            sendButton.value.disabled = false;
-            inputField.value.disabled = false;
-        }
-    }
-    scrollToBottom()
-});
-
-socket.on('disconnect', (reason) => {
-    let code = 1006;
-    if (reason === 'io server disconnect') code = 1000;
-    againConnect(reason)
-    console.log('连接已关闭:', code, reason);
-});
-
-socket.on('connect_error', function (error) {
-    againConnect(error.message)
-});
-/**
-setInterval(() => {
-    socket.emit('message', JSON.stringify({ 'type': 'getAllMessages' }));
-}, 500)
-**/
-const sendMessage = (() => {
-    if (inputField.value) {
-        inputField.value.value = ''
-    }
-    scrollToBottom()
-    socket.emit('message', JSON.stringify({ 'type': 'sendMessagesToAI', 'content': currentMessage.value }));
-    socket.emit('message', JSON.stringify({ 'type': 'getAllMessages' }));
-})
+const { messagesList, currentMessage, sendMessage, toolList, allowTools, changeAllowTool } = useChatSocket(sendButton, inputField)
 
 const updataCurrentMessage = ((message: any) => {
     currentMessage.value = message.target.value
@@ -78,24 +27,6 @@ const scrollToBottom = () => {
     });
 };
 
-const againConnect = (errorMessage: string) => {
-    dialog({
-        headline: "后端连接失败",
-        description: `是否重新连接?`,
-        actions: [
-            {
-                text: "否",
-            },
-            {
-                text: "是",
-                onClick: () => {
-                    socket.connect()
-                },
-            }
-        ]
-    });
-}
-
 onMounted(() => {
     scrollToBottom()
 })
@@ -105,6 +36,17 @@ onMounted(() => {
         <ChatCard v-for="(message, index) in messagesList" :key="index" :messages="message" :type="message.role" />
         <div class="message-space"></div>
         <div class="controls">
+            <mdui-card variant="filled" clickable class="tools-setting">
+                <mdui-collapse>
+                    <mdui-collapse-item :header="`本会话工具权限 (${allowTools.length}/${toolList.length})`">
+                        <div class="tools-setting-checkbox-list">
+                            <mdui-checkbox v-for="value in toolList" :checked="allowTools.includes(value)"
+                                @change="changeAllowTool(value)">{{ value
+                                }}</mdui-checkbox>
+                        </div>
+                    </mdui-collapse-item>
+                </mdui-collapse>
+            </mdui-card>
             <mdui-card variant="filled" class="input">
                 <mdui-text-field class="input-field" label="问问 ezAutoAI" ref="inputField" @input="updataCurrentMessage"
                     @keydown.enter="sendMessage"></mdui-text-field>
@@ -161,6 +103,30 @@ onMounted(() => {
     transform-origin: center;
     overflow: hidden;
     pointer-events: all;
+}
+
+.tools-setting {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 50%;
+    max-width: 640px;
+    min-width: 320px;
+    height: auto;
+    pointer-events: all;
+    padding: 8px;
+}
+
+.tools-setting-checkbox-list {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+}
+
+.tools-setting-open {
+    right: 8px;
 }
 
 .input-field {

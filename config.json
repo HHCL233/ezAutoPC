@@ -1,6 +1,6 @@
 {
     "autopc": {
-        "api_key": "",
+        "api_key": "sk-CLn5iDYRJh0q1DgCzN2KT43xoRIj1rydNJkhNXQcitbp9kNf",
         "base_url": "https://api.moonshot.cn/v1",
         "context_window": 128000,
         "is_multimodal": true,

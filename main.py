@@ -141,6 +141,24 @@ def handleMessage(data):
     # 处理获取所有消息请求
     if jsonData["type"] == "getAllMessages":
         onAISendMessage()
+    elif jsonData["type"] == "allowTool":
+        autopc.allow_tool(jsonData["msg"])
+    elif jsonData["type"] == "notAllowedTool":
+        autopc.not_allowed_tool(jsonData["msg"])
+    elif jsonData["type"] == "getAllTools":
+        emit(
+            "response",
+            {
+                "msg": json.dumps(
+                    {
+                        "allTools": list(autopc.tool_map.keys()),
+                        "allowTools": autopc.allow_tools,
+                    }
+                ),
+                "type": "getAllTools",
+                "timestamp": time.time(),
+            },
+        )
     # 处理发送消息给AI请求
     elif jsonData["type"] == "sendMessagesToAI":
         emit(

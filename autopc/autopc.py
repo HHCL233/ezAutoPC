@@ -36,23 +36,10 @@ class AutoPC:
         self.client = OpenAI(api_key="")
         self.tools: list = TOOLS
         self.on_ai_send_message = []
+        self.allow_tools = []
 
-        # 初始化管理器
-        self.config_manager = ConfigManager()
-        self.skills_manager = SkillsManager(self.BASE_DIR)
-
-        # 初始化配置和技能
-        self.config = self.config_manager.read_config(self.BASE_DIR)
-        self.skills = self.skills_manager.get_skills_info()
-        self.client.api_key = self.config["api_key"]
-        self.client.base_url = self.config["base_url"]
-
-        # 构建初始消息
-
-        self.messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
-        self.full_messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
-
-        self._init_prompts()
+        # 初始化
+        self.read_config()
 
         # 工具映射
         self.tool_map = {
@@ -371,7 +358,14 @@ class AutoPC:
                         tool_call_args = json.loads(tool_call.function.arguments)
                         tool_func = self.tool_map.get(tool_call_name)
                         if tool_func:
-                            tool_result = tool_func(tool_call_args)
+                            tool_result = None
+                            if tool_call_name in self.allow_tools:
+                                tool_result = tool_func(tool_call_args)
+                            else:
+                                tool_result = {
+                                    "success": False,
+                                    "error": "此操作不在允许清单内",
+                                }
                             print(tool_result)
                             self.messages.append(
                                 {
@@ -441,4 +435,29 @@ class AutoPC:
             self.send_ai_message(user_input)
 
     def read_config(self):
+        # 初始化管理器
+        self.config_manager = ConfigManager()
+        self.skills_manager = SkillsManager(self.BASE_DIR)
+
+        # 初始化配置和技能
         self.config = self.config_manager.read_config(self.BASE_DIR)
+        self.skills = self.skills_manager.get_skills_info()
+        self.client.api_key = self.config["api_key"]
+        self.client.base_url = self.config["base_url"]
+
+        # 构建初始消息
+
+        self.messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
+        self.full_messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
+
+        self._init_prompts()
+
+    def allow_tool(self, tool_name):
+        if tool_name not in self.allow_tools:
+            self.allow_tools.append(tool_name)
+            print(f"[权限管理] 在本对话中已允许使用 {tool_name}")
+
+    def not_allowed_tool(self, tool_name):
+        if tool_name in self.allow_tools:
+            self.allow_tools.remove(tool_name)
+            print(f"[权限管理] 在本对话中已拒绝使用 {tool_name}")
