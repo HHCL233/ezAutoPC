@@ -135,39 +135,47 @@ _______       ________      ________      ___  ___      _________    ________   
         return {"token": total}
 
     def recap_messages(self):
-        text_parts = []
-        for msg in self.messages[1:]:
-            role = msg.get("role") if isinstance(msg, dict) else msg.role
-            content: Any = msg.get("content") if isinstance(msg, dict) else msg.content
-            if role == "user":
-                text_parts.append(f"{role}:{content[0]}")
-            else:
-                text_parts.append(f"{role}:{content}")
-        raw_text = "\n".join(text_parts)
+        try:
+            text_parts = []
+            for msg in self.messages[1:]:
+                role = msg.get("role") if isinstance(msg, dict) else msg.role
+                content: Any = (
+                    msg.get("content") if isinstance(msg, dict) else msg.content
+                )
+                if role == "user":
+                    text_parts.append(f"{role}:{content[0]}")
+                else:
+                    text_parts.append(f"{role}:{content}")
+            raw_text = "\n".join(text_parts)
 
-        recap_messages = [
-            {"role": "system", "content": self.recap_prompt},
-            {"role": "user", "content": [{"type": "text", "text": raw_text}]},
-        ]
+            recap_messages = [
+                {"role": "system", "content": self.recap_prompt},
+                {"role": "user", "content": [{"type": "text", "text": raw_text}]},
+            ]
 
-        completion = self.client.chat.completions.create(
-            model=self.config["model"],
-            temperature=0.6,
-            messages=recap_messages,
-            tools=self.tools,
-            extra_body={"thinking": {"type": "disabled"}},
-        )
-        summary_content = completion.choices[0].message.content
-        self.messages = [
-            self.messages[0],
-            {"role": "user", "content": f"【历史对话】\n{summary_content}"},
-        ]
-        print(f"[Token] 总结后内容: {summary_content}")
-        print("[Token] 总结完成")
+            completion = self.client.chat.completions.create(
+                model=self.config["model"],
+                temperature=0.6,
+                messages=recap_messages,
+                tools=self.tools,
+                extra_body={"thinking": {"type": "disabled"}},
+            )
+            summary_content = completion.choices[0].message.content
+            self.messages = [
+                self.messages[0],
+                {"role": "user", "content": f"【历史对话】\n{summary_content}"},
+            ]
+            print(f"[Token] 总结后内容: {summary_content}")
+            print("[Token] 总结完成")
+            return True
+        except Exception as e:
+            print(f"[Token] {e}")
+            print("[Token] 总结失败")
+            return False
 
     def try_recap_messages(self):
         token = self.get_messages_token()
-        if token["token"] >= (int(self.config["context_window"]) * 0.9):
+        if token["token"] >= (int(self.config["context_window"]) * 0.75):
             self.push_messages(
                 {
                     "role": "assistant",
@@ -177,18 +185,18 @@ _______       ________      ________      ___  ___      _________    ________   
             )
             self.on_ai_send_message_handler()
             print("[压缩Token] 达到Token上限,开始总结")
-            self.recap_messages()
+            recap_success = self.recap_messages()
             current_token = self.get_messages_token()
             self.push_messages(
                 {
                     "role": "assistant",
                     "name": "system_notice",
-                    "content": f"Token压缩完成,总结前Token:{token['token']},当前Token:{current_token['token']}",
+                    "content": f"Token压缩{recap_success if '成功' else '失败'},总结前Token:{token['token']},当前Token:{current_token['token']}",
                 }
             )
             self.on_ai_send_message_handler()
             print(
-                f"[压缩Token] 总结完成,总结前Token:{token['token']},当前Token:{current_token['token']}"
+                f"[压缩Token] 总结{recap_success if '成功' else '失败'},总结前Token:{token['token']},当前Token:{current_token['token']}"
             )
         else:
             pass
