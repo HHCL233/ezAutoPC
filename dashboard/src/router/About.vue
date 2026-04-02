@@ -1,7 +1,12 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useConfigStore } from '@/stores/config';
+
+const config = useConfigStore()
+</script>
 <template>
     <div class="about">
         <h1>ezAutoPC</h1>
+        <span>版本 {{ config?.config?.version }}</span>
     </div>
 </template>
 <style scoped>
