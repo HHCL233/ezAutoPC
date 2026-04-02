@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { ApiFetch } from '@/utils/apiFetch';
 
 export const useConfigStore = defineStore('config', () => {
-  const config = ref({})
+  const config = ref<any>({})
   async function getConfig() {
     config.value = (await ApiFetch.getConfig()).json
   }

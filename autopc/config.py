@@ -21,7 +21,13 @@ class ConfigManager:
                 with open(config_path, "r", encoding="utf-8") as f:
                     config_content = f.read()
                     config_json = json.loads(config_content)
-                    return config_json["autopc"]
+                    config_index = config_json["autopc"]["config_index"]
+                    if config_index >= len(config_json["autopc"]["config_list"]):
+                        return config_json["autopc"]["config_list"][
+                            len(config_json["autopc"]["config_list"]) - 1
+                        ]
+                    else:
+                        return config_json["autopc"]["config_list"][config_index]
             else:
                 print("[读取配置] config 文件不存在")
                 print("正在退出程序...")

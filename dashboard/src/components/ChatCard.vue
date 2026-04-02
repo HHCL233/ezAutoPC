@@ -1,20 +1,27 @@
 <script setup lang="ts">
 import { marked } from 'marked';
 import { useConfigStore } from '@/stores/config';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const config: any = useConfigStore()
 const props = defineProps([
     'messages',
     'type'
 ])
-console.log(config)
+const currentConfig = ref<any>()
+onMounted(async () => {
+    await config.getConfig()
+    if (config.config.autopc.config_index >= config.config.autopc.config_list.length) {
+        config.config.autopc.config_index = config.config.autopc.config_list.length - 1
+    }
+    currentConfig.value = config.config.autopc.config_list[config.config.autopc.config_index]
+})
 </script>
 <template>
     <div class="chat-card" :class="type">
         <mdui-card class="chat-content">
             <!-- messages.content应该是不直接JSON.parse,这里改比较麻烦 -->
-            <div v-if="(config.config?.autopc?.tool_call)">
+            <div v-if="(currentConfig?.tool_call)">
                 <div v-for="(value, index) in JSON.parse(messages.content)" class="message"
                     v-if="messages.role == 'system'">
                     <div class="message-content" v-if="value.type == 'message' || value.type == 'user'"
@@ -36,7 +43,7 @@ console.log(config)
                     {{ messages.content[0]['text'] }}
                 </div>
                 <mdui-card variant="outlined"
-                    v-if="messages.role == 'assistant' && config.config?.autopc?.thinking == true && messages.name != 'system_notice'"
+                    v-if="messages.role == 'assistant' && currentConfig?.thinking == true && messages.name != 'system_notice'"
                     class="message-nomessage-content" clickable>
                     <mdui-collapse>
                         <mdui-collapse-item header="思考内容: "

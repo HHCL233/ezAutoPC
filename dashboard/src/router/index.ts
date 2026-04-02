@@ -14,10 +14,15 @@ const router = createRouter({
     meta: { title: '设置' }
   }, {
     path: '/chat',
-    name: 'Chay',
+    name: 'Chat',
     component: () => import('@/router/Chat/Chat.vue'),
     meta: { title: '对话' }
-  }],
+  }, {
+    path: '/about',
+    name: 'About',
+    component: () => import('@/router/About.vue'),
+    meta: { title: '关于' }
+  }]
 })
 
 export default router

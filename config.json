@@ -1,14 +1,52 @@
 {
     "autopc": {
-        "api_key": "",
-        "base_url": "https://api.moonshot.cn/v1",
-        "context_window": 128000,
-        "is_multimodal": true,
-        "lines_prompt": "",
-        "model": "kimi-k2.5",
-        "temperature": "1",
-        "thinking": true,
-        "tool_calls": true
+        "config_index": 2,
+        "config_list": [
+            {
+                "api_key": "sk-ED8y5cA6TYmbjjPUtH19UfE9CgCqLnaH3A4CEItvKx4O0Cc9",
+                "base_url": "https://api.moonshot.cn/v1",
+                "context_window": 128000,
+                "is_multimodal": true,
+                "lines_prompt": "",
+                "model": "kimi-k2.5",
+                "temperature": "1",
+                "thinking": true,
+                "tool_calls": true
+            },
+            {
+                "api_key": "sk-ED8y5cA6TYmbjjPUtH19UfE9CgCqLnaH3A4CEItvKx4O0Cc9",
+                "base_url": "https://api.moonshot.cn/v1",
+                "context_window": 128000,
+                "is_multimodal": true,
+                "lines_prompt": "",
+                "model": "kimi-k2.5",
+                "temperature": "0.6",
+                "thinking": true,
+                "tool_calls": true
+            },
+            {
+                "api_key": "",
+                "base_url": "https://api.moonshot.cn/v1",
+                "context_window": 128000,
+                "is_multimodal": true,
+                "lines_prompt": "",
+                "model": "kimi-k2.5",
+                "temperature": "1",
+                "thinking": true,
+                "tool_calls": true
+            }
+        ],
+        "template": {
+            "api_key": "",
+            "base_url": "https://api.moonshot.cn/v1",
+            "context_window": 128000,
+            "is_multimodal": true,
+            "lines_prompt": "",
+            "model": "kimi-k2.5",
+            "temperature": "1",
+            "thinking": true,
+            "tool_calls": true
+        }
     },
     "descriptions": {
         "api_key": "AI提供商密钥",

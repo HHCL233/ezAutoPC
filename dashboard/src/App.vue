@@ -4,10 +4,12 @@ import { ref, onMounted, defineAsyncComponent } from 'vue'
 import type { NavigationDrawer } from 'mdui';
 import { usePagesStore, type PageKey } from '@/stores/pages'
 import { useConfigStore } from '@/stores/config';
+import { useRoute, useRouter } from 'vue-router'
 
 const config = useConfigStore()
 const pages = usePagesStore()
 const itemsDrawer = ref<NavigationDrawer | null>(null)
+const route = useRoute()
 
 config.getConfig()
 
@@ -24,13 +26,13 @@ const pushPage = ((name: PageKey) => {
 <template>
   <mdui-top-app-bar scroll-behavior="elevate">
     <mdui-button-icon icon="menu" @click="openItemsDrawer()"></mdui-button-icon>
-    <mdui-top-app-bar-title>ezAutoPC</mdui-top-app-bar-title>
+    <mdui-top-app-bar-title>ezAutoPC {{ route.meta.title }}</mdui-top-app-bar-title>
     <mdui-button-icon icon="more_vert"></mdui-button-icon>
   </mdui-top-app-bar>
   <mdui-navigation-drawer close-on-overlay-click class="items-drawer" modal ref="itemsDrawer">
     <mdui-list>
       <mdui-list-item rounded v-for="(value, key, index) in pages.pageList" @click="pushPage(key)">{{ value.title
-        }}</mdui-list-item>
+      }}</mdui-list-item>
     </mdui-list>
   </mdui-navigation-drawer>
   <RouterView />

@@ -15,7 +15,7 @@ interface PageItem {
   title: string
   children: PageChild[]
 }
-export type PageKey = 'home' | 'chat' | 'setting'
+export type PageKey = 'home' | 'chat' | 'setting' | 'about'
 
 export const usePagesStore = defineStore('pages', () => {
   const router = useRouter()
@@ -43,8 +43,12 @@ export const usePagesStore = defineStore('pages', () => {
         path: 'ezautopc-setting',
         title: '本体设置',
         component: SettingAutoPC,
-      }]
-    }
+      },]
+    }, about: {
+      path: 'about',
+      title: '关于',
+      children: []
+    },
   })
   const page = ref<PageItem>(pageList.value.home)
   function pushPage(name: PageKey) {

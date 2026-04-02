@@ -2,30 +2,82 @@
 import { ApiFetch } from '@/utils/apiFetch';
 import { onMounted, ref } from 'vue';
 import { upperFirst, camelCase } from 'lodash'
+import { useConfigStore } from '@/stores/config';
+import type { Tab } from 'mdui/components/tab.js';
 
-let config: any = null
 const autoPCConfigJson = ref<any>({})
+const config = useConfigStore()
+const settingAutopcConfigTabs = ref<Tab | null>(null)
 onMounted(async () => {
-    config = await ApiFetch.getConfig()
-    if (config.success == true && config.json) {
-        autoPCConfigJson.value = config.json.autopc
+    await config.getConfig()
+    if (config.config.autopc.config_index >= config.config.autopc.config_list.length) {
+        correctCurrentIndex(true)
+    } else {
+        correctCurrentIndex()
     }
 })
 
 const savaConfig = (async () => {
-    await ApiFetch.saveConfig(config['json'])
+    await config.pushConfig()
 })
 
-function convertByOriginalType(value: any, originalValue: any) {
+const convertByOriginalType = ((value: any, originalValue: any) => {
     return originalValue.constructor(value);
-}
+})
+
+const changeConfigIndex = (async (index: number) => {
+    config.config.autopc.config_index = index
+    correctCurrentIndex()
+    await config.pushConfig()
+})
+
+const newConfig = (async () => {
+    config.config.autopc.config_list.push(JSON.parse(JSON.stringify(config.config.autopc.template)))
+    await config.pushConfig()
+    correctCurrentIndex(true)
+})
+
+const middleDeleteConfig = (async (event: any, index: number) => {
+    if (event.button === 1) {
+        deleteConfig(index)
+    }
+})
+
+const deleteConfig = (async (index: number) => {
+    config.config.autopc.config_list.splice(index, 1)
+    await config.pushConfig()
+    correctCurrentIndex(true)
+})
+
+const correctCurrentIndex = ((end?: boolean) => {
+    if (end) {
+        config.config.autopc.config_index = config.config.autopc.config_list.length - 1
+    }
+    autoPCConfigJson.value = config.config.autopc.config_list[config.config.autopc.config_index]
+    if (settingAutopcConfigTabs.value) {
+        settingAutopcConfigTabs.value.value = `tab-${config.config.autopc.config_index}`
+    }
+    if (end) {
+        config.config.autopc.config_index = config.config.autopc.config_list.length
+    }
+})
 </script>
 <template>
     <div class="setting-autopc">
         <h2>本体设置</h2>
+        <mdui-tabs value="tab-0" class="setting-autopc-config-tabs" full-width ref="settingAutopcConfigTabs">
+            <mdui-tab v-for="(value, index) in config.config?.autopc?.config_list" :value="`tab-${index}`"
+                @click="changeConfigIndex(Number(index))" @mousedown="middleDeleteConfig($event, Number(index))"
+                class="setting-autopc-config-tab">
+                <span slot="custom" class="setting-autopc-config-name">配置 {{ index }}</span>
+                <mdui-button-icon icon="delete" slot="custom" class="setting-autopc-config-delete"
+                    @click="deleteConfig(Number(index))"></mdui-button-icon>
+            </mdui-tab>
+            <mdui-tab :value="`tab-new`" @click="newConfig()">新建配置</mdui-tab>
+        </mdui-tabs>
         <mdui-list class="setting-autopc-lists">
             <mdui-list-item :headline="camelCase(`${key}`)""
-                v-for="(value, key, index) in autoPCConfigJson" :description="config.json.descriptions[key]">
+                v-for="(value, key, index) in autoPCConfigJson" :description="config.config.descriptions[key]">
                 <mdui-text-field slot="end-icon" class="setting-autopc-list-text-field" :value="value"
                     v-if="(typeof value) != 'boolean'" :type="typeof value == 'number' ? 'number' : 'text'"
                     :autosize="(String(key).includes('lines_')) ? true : false"
@@ -55,5 +107,11 @@ function convertByOriginalType(value: any, originalValue: any) {
     position: fixed;
     right: 36px;
     bottom: 36px;
+}
+
+.setting-autopc-config-delete {
+    height: 24px;
+    width: 24px;
+    margin-left: 24px;
 }
 </style>
