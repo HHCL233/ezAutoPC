@@ -6,6 +6,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
 from termcolor import colored
 import inspect
+import asyncio
 
 from .prompts import TOOLS_PROMPT, NO_TOOLS_PROMPT, RECAP_PROMPT
 from .tools import TOOLS
@@ -24,8 +25,11 @@ from .utils import (
     press_action,
     terminal_action,
     return_terminal_action,
+    get_request,
+    post_request,
 )
 from .plugins import PluginsManager
+from .mcp import MCPManager
 
 
 class AutoPC:
@@ -63,9 +67,6 @@ _______       ________      ________      ___  ___      _________    ________   
         self.allow_tools = []
         self.commands = {}
 
-        # 初始化
-        self.read_config()
-
         # 工具映射
         self.tool_map = {
             "mouse": lambda args: (mouse_action(args), None)[1],
@@ -77,7 +78,12 @@ _______       ________      ________      ___  ___      _________    ________   
             "returnTerminal": lambda args: return_terminal_action(args),
             "readSkillMd": self._wrap_read_skill_md,
             "download": lambda args: download_file(args),
+            "getRequest": lambda args: get_request(args),
+            "postRequest": lambda args: post_request(args),
         }
+
+        # 初始化
+        self.read_config()
 
     def _init_prompts(self):
         """根据配置初始化提示词"""
@@ -364,7 +370,10 @@ _______       ________      ________      ___  ___      _________    ________   
                         if tool_func:
                             tool_result = None
                             if tool_call_name in self.allow_tools:
-                                tool_result = tool_func(tool_call_args)
+                                if inspect.iscoroutinefunction(tool_func):
+                                    tool_result = asyncio.run(tool_func(tool_call_args))
+                                else:
+                                    tool_result = tool_func(tool_call_args)
                             else:
                                 tool_result = {
                                     "success": False,
@@ -456,16 +465,21 @@ _______       ________      ________      ___  ___      _________    ________   
             self.send_ai_message(user_input)
 
     def read_config(self):
-        # 初始化管理器
+        # 初始化配置管理器
         self.config_manager = ConfigManager()
+        self.config = self.config_manager.read_config(self.BASE_DIR)
+
+        # 初始化其他管理器
         self.skills_manager = SkillsManager(self.BASE_DIR)
         self.plugins_manager = PluginsManager(self)
+        self.mcp_manager = MCPManager(self)
 
-        # 初始化配置和技能
-        self.config = self.config_manager.read_config(self.BASE_DIR)
+        # 初始化技能和MCP
+        self.tools: list = TOOLS
         self.skills = self.skills_manager.get_skills_info()
         self.client.api_key = self.config["api_key"]
         self.client.base_url = self.config["base_url"]
+        asyncio.run(self.mcp_manager.start_all_mcp())
 
         # 构建初始消息
 

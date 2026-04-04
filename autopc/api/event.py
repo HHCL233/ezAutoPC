@@ -5,7 +5,7 @@ _command_registry = []
 
 
 def registr_command(cmd_name):
-    """装饰器：注册命令"""
+    """注册命令"""
 
     def decorator(func):
         _command_registry.append((cmd_name, func))

@@ -1,37 +1,22 @@
 {
-    "version": 2,
     "autopc": {
-        "config_index": 2,
+        "config_index": 1,
         "config_list": [
             {
-                "api_key": "sk-ED8y5cA6TYmbjjPUtH19UfE9CgCqLnaH3A4CEItvKx4O0Cc9",
-                "base_url": "https://api.moonshot.cn/v1",
-                "context_window": 128000,
-                "is_multimodal": true,
-                "lines_prompt": "",
-                "model": "kimi-k2.5",
-                "temperature": "1",
-                "thinking": true,
-                "tool_calls": true
-            },
-            {
-                "api_key": "sk-ED8y5cA6TYmbjjPUtH19UfE9CgCqLnaH3A4CEItvKx4O0Cc9",
-                "base_url": "https://api.moonshot.cn/v1",
-                "context_window": 128000,
-                "is_multimodal": true,
-                "lines_prompt": "",
-                "model": "kimi-k2.5",
-                "temperature": "0.6",
-                "thinking": true,
-                "tool_calls": true
-            },
-            {
                 "api_key": "",
-                "base_url": "https://api.moonshot.cn/v1",
+                "base_url": "https://apis.iflow.cn/v1",
                 "context_window": 128000,
-                "is_multimodal": true,
+                "is_multimodal": false,
                 "lines_prompt": "",
-                "model": "kimi-k2.5",
+                "mcpServers": {
+                    "server1": {
+                        "disabled": false,
+                        "headers": {},
+                        "type": "streamable-http",
+                        "url": "http://127.0.0.1:8000/mcp"
+                    }
+                },
+                "model": "kimi-k2",
                 "temperature": "1",
                 "thinking": true,
                 "tool_calls": true
@@ -43,6 +28,22 @@
             "context_window": 128000,
             "is_multimodal": true,
             "lines_prompt": "",
+            "mcpServers": {
+                "server1": {
+                    "alwaysAllow": [
+                        "tool1",
+                        "tool2"
+                    ],
+                    "args": [
+                        "/path/to/server.py"
+                    ],
+                    "command": "python",
+                    "disabled": false,
+                    "env": {
+                        "API_KEY": "your_api_key"
+                    }
+                }
+            },
             "model": "kimi-k2.5",
             "temperature": "1",
             "thinking": true,
@@ -55,6 +56,12 @@
         "context_window": "模型上下文最高Token,接近该值后将自动压缩Token",
         "is_multimodal": "多模态功能",
         "lines_prompt": "用户提示词",
+        "mcpServers": "MCP服务器配置",
+        "mcp_server_enabled": "是否启用该MCP服务端",
+        "mcp_server_name": "MCP服务端名称",
+        "mcp_server_timeout": "请求超时时间(秒)",
+        "mcp_server_url": "MCP服务端URL",
+        "mcp_servers": "MCP服务端配置列表",
         "model": "使用模型",
         "temperature": "温度设置",
         "thinking": "模型思考功能",
@@ -63,5 +70,6 @@
     "tips": [
         "WoW!"
     ],
+    "version": 3,
     "webui": {}
 }

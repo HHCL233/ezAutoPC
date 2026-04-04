@@ -184,6 +184,51 @@ def download_file(control_arguments: dict) -> dict:
         return {"success": False}
 
 
+def get_request(control_arguments: dict) -> dict:
+    """
+    get请求
+    :param control_arguments: 包含url的字典
+    :return: 结果字典
+    """
+    try:
+        response = httpx.get(control_arguments["url"])
+        response.raise_for_status()
+
+        return {
+            "success": True,
+            "content": response.text,
+            "status_code": response.status_code,
+        }
+    except Exception as e:
+        print(f"[Get请求] {e}")
+        return {"success": False}
+
+
+def post_request(control_arguments: dict) -> dict:
+    """
+    post请求
+    :param control_arguments: 包含url的字典
+    :return: 结果字典
+    """
+    try:
+        response = httpx.post(
+            control_arguments["url"],
+            json=control_arguments["json"],
+            headers=control_arguments["headers"],
+            cookies=control_arguments["cookies"],
+        )
+        response.raise_for_status()
+
+        return {
+            "success": True,
+            "content": response.text,
+            "status_code": response.status_code,
+        }
+    except Exception as e:
+        print(f"[Get请求] {e}")
+        return {"success": False}
+
+
 # 对pyautogui的简单封装
 def mouse_action(control_arguments: dict):
     pyautogui.FAILSAFE = False

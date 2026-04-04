@@ -146,4 +146,50 @@ TOOLS: List[ChatCompletionToolParam] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "getRequest",
+            "description": "使用Get请求方式访问API并获取内容",
+            "parameters": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "API的URL",
+                    }
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "postRequest",
+            "description": "使用Post请求方式访问API并获取内容",
+            "parameters": {
+                "type": "object",
+                "required": ["url", "json", "headers", "cookies"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "API的URL",
+                    },
+                    "json": {
+                        "type": "object",
+                        "description": "请求JSON",
+                    },
+                    "headers": {
+                        "type": "object",
+                        "description": "请求头",
+                    },
+                    "cookies": {
+                        "type": "object",
+                        "description": "请求Cookies",
+                    },
+                },
+            },
+        },
+    },
 ]

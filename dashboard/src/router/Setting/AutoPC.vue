@@ -1,13 +1,24 @@
 <script setup lang="ts">
 import { ApiFetch } from '@/utils/apiFetch';
 import { onMounted, ref } from 'vue';
-import { upperFirst, camelCase } from 'lodash'
+import { upperFirst, camelCase } from 'lodash';
 import { useConfigStore } from '@/stores/config';
+import { isDictionary } from '@/utils/type';
+import { dialog } from 'mdui/functions/dialog.js';
+
 import type { Tab } from 'mdui/components/tab.js';
+import type { Dialog } from 'mdui/components/dialog.js';
+import type { TextField } from 'mdui/components/text-field.js';
 
 const autoPCConfigJson = ref<any>({})
 const config = useConfigStore()
 const settingAutopcConfigTabs = ref<Tab | null>(null)
+const objectEdit = ref<Dialog | null>(null)
+const objectEditField = ref<TextField | null>(null)
+
+let currentEditKey = ''
+let editErrorText = ''
+
 onMounted(async () => {
     await config.getConfig()
     if (config.config.autopc.config_index >= config.config.autopc.config_list.length) {
@@ -61,7 +72,34 @@ const correctCurrentIndex = ((end?: boolean) => {
         config.config.autopc.config_index = config.config.autopc.config_list.length
     }
 })
+
+const saveObjectEdit = (() => {
+    if (!objectEdit.value || !objectEditField.value) return
+    const helper = objectEditField.value.querySelector('span')
+    try {
+        const val = objectEditField.value.value
+        const json = JSON.parse(val)
+        autoPCConfigJson.value[currentEditKey] = json
+        editErrorText = ''
+        if (helper) helper.innerHTML = ''
+        objectEdit.value.open = false
+    } catch (e) {
+        editErrorText = `JSON解析错误 ${e}`
+        if (helper) helper.innerHTML = editErrorText
+    }
+})
+
+const showObjectEdit = ((value: object, name: string) => {
+    if (!objectEdit.value || !objectEditField.value) return
+    currentEditKey = name
+    editErrorText = ''
+    objectEditField.value.value = JSON.stringify(value, null, 4)
+    const helper = objectEditField.value.querySelector('span')
+    if (helper) helper.innerHTML = ''
+    objectEdit.value.open = true
+})
 </script>
+
 <template>
     <div class="setting-autopc">
         <h2>本体设置</h2>
@@ -76,19 +114,29 @@ const correctCurrentIndex = ((end?: boolean) => {
             <mdui-tab :value="`tab-new`" @click="newConfig()">新建配置</mdui-tab>
         </mdui-tabs>
         <mdui-list class="setting-autopc-lists">
-            <mdui-list-item :headline="camelCase(`${key}`)""
-                v-for="(value, key, index) in autoPCConfigJson" :description="config.config.descriptions[key]">
+            <mdui-list-item :headline="camelCase(`${key}`)" :key="key" v-for="(value, key, index) in autoPCConfigJson"
+                :description="config.config.descriptions[key]">
                 <mdui-text-field slot="end-icon" class="setting-autopc-list-text-field" :value="value"
-                    v-if="(typeof value) != 'boolean'" :type="typeof value == 'number' ? 'number' : 'text'"
+                    v-if="(typeof value) == 'string'" :type="typeof value == 'number' ? 'number' : 'text'"
                     :autosize="(String(key).includes('lines_')) ? true : false"
                     @change="autoPCConfigJson[key] = convertByOriginalType($event.target.value, autoPCConfigJson[key])"></mdui-text-field>
+                <mdui-button v-else-if="isDictionary(value)" slot="end-icon"
+                    @click="showObjectEdit(value, String(key))">编辑</mdui-button>
                 <mdui-switch v-else :checked="value" slot="end-icon"
                     @change="autoPCConfigJson[key] = convertByOriginalType($event.target.checked, autoPCConfigJson[key])"></mdui-switch>
             </mdui-list-item>
         </mdui-list>
         <mdui-fab icon="save" class="setting-autopc-save" @click="savaConfig()"></mdui-fab>
     </div>
+
+    <mdui-dialog close-on-overlay-click fullscreen headline="编辑" class="object-edit" ref="objectEdit">
+        <mdui-text-field autosize label="" class="object-edit-field" ref="objectEditField">
+            <span slot="helper" style="color: red"></span>
+        </mdui-text-field>
+        <mdui-button slot="action" variant="tonal" @click="saveObjectEdit()">确定</mdui-button>
+    </mdui-dialog>
 </template>
+
 <style scoped>
 .setting-autopc-lists {
     margin: -8px -16px;
@@ -113,5 +161,9 @@ const correctCurrentIndex = ((end?: boolean) => {
     height: 24px;
     width: 24px;
     margin-left: 24px;
+}
+
+.object-edit-field {
+    min-width: 100%;
 }
 </style>
