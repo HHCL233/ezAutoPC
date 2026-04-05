@@ -68,7 +68,9 @@
         "tool_calls": "(不建议改变) 使用OpenAI规范ToolCalls"
     },
     "tips": [
-        "WoW!"
+        "WoW!",
+        "TGAI好吃",
+        "无人区"
     ],
     "version": 3,
     "webui": {}

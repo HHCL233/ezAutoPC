@@ -133,7 +133,7 @@ const showObjectEdit = ((value: object, name: string) => {
         <mdui-text-field autosize label="" class="object-edit-field" ref="objectEditField">
             <span slot="helper" style="color: red"></span>
         </mdui-text-field>
-        <mdui-button slot="action" variant="tonal" @click="saveObjectEdit()">确定</mdui-button>
+        <mdui-button slot="action" @click="saveObjectEdit()">确定</mdui-button>
     </mdui-dialog>
 </template>
 
