@@ -97,7 +97,8 @@ def updateConfig():
 @app.route("/api/config")
 def getConfig():
     try:
-        with open("config.json", encoding="utf-8", mode="r") as config:
+        home_dir = os.path.expanduser("~/.ezautopc/config.json")
+        with open(home_dir, encoding="utf-8", mode="r") as config:
             jsonConfig = json.loads(config.read())
             return {
                 "success": True,

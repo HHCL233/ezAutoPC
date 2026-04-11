@@ -7,8 +7,9 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
 from termcolor import colored
 import inspect
 import asyncio
+from types import SimpleNamespace
 
-from .prompts import TOOLS_PROMPT, NO_TOOLS_PROMPT, RECAP_PROMPT
+from .prompts import TOOLS_PROMPT, RECAP_PROMPT
 from .tools import TOOLS
 from .config import ConfigManager
 from .skills import SkillsManager
@@ -87,7 +88,6 @@ _______       ________      ________      ___  ___      _________    ________   
 
     def _init_prompts(self):
         """根据配置初始化提示词"""
-        self.no_tools_prompt = NO_TOOLS_PROMPT
         self.recap_prompt = RECAP_PROMPT
 
         if self.config.get("tool_calls"):
@@ -214,108 +214,6 @@ _______       ________      ________      ___  ___      _________    ________   
     def _wrap_read_skill_md(self, control_arguments):
         return self.skills_manager.read_skill_md(control_arguments["name"])
 
-    def send_image_to_ai(self, prompt, image_source, is_local=True):
-        if self.config.setdefault("is_multimodal"):
-            new_messages = {
-                "role": "user",
-                "name": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_to_base64(image_source)}"
-                            if is_local
-                            else image_source
-                        },
-                    },
-                ],
-            }
-            self.push_messages(new_messages)
-        else:
-            print("[警告] is_multimodal为false,因此不会发送屏幕截图")
-            new_messages = {
-                "role": "user",
-                "name": "user",
-                "content": [{"type": "text", "text": prompt}],
-            }
-            self.push_messages(new_messages)
-
-        try:
-            self.client.api_key = self.config.setdefault("api_key", "")
-            self.client.base_url = self.config.setdefault("base_url", "")
-            response = self.client.chat.completions.create(
-                model=self.config.setdefault("model", ""),
-                messages=self.messages,
-                temperature=float(self.config.setdefault("temperature", "")),
-                extra_body={
-                    "thinking": {
-                        "type": "enabled"
-                        if self.config.setdefault("thinking", False)
-                        else "disabled"
-                    }
-                },
-            )
-            new_msg = {
-                "name": "assistant",
-                "role": "assistant",
-                "content": response.choices[0].message.content,
-            }
-            self.push_messages(new_msg)
-            return response.choices[0].message.content
-
-        except Exception as e:
-            error_str = json.dumps(
-                [{"type": "error", "arguments": {"content": f"请求失败:{str(e)}"}}]
-            )
-            self.push_messages(
-                {"role": "assistant", "name": "system_notice", "content": error_str}
-            )
-            return error_str
-
-    def handle_ai_message(self, content, user_message):
-        try:
-            controls_json = json.loads(content)
-            for control in controls_json:
-                control_type = control["type"]
-                control_args = control["arguments"]
-
-                if control_type == "mouse":
-                    mouse_action(control_args)
-                elif control_type == "click":
-                    click_action()
-                elif control_type == "doubleClick":
-                    double_click_action()
-                elif control_type == "write":
-                    write_action(control_args)
-                elif control_type == "press":
-                    press_action(control_args)
-                elif control_type == "message":
-                    print("[AI消息]", control_args["content"])
-                elif control_type == "continue":
-                    json_content = json.loads(user_message)
-                    sleep(int(control_args["wait"]))
-                    self.send_ai_message(
-                        f"继续操作({json_content[0]['arguments']['content'].encode('raw_unicode_escape').decode('utf-8')})",
-                        "application",
-                    )
-                elif control_type == "terminal":
-                    terminal_action(control_args)
-                elif control_type == "returnTerminal":
-                    result = return_terminal_action(control_args)
-                    self.send_ai_message(
-                        f"终端操作已完成,输出:{result['content']}", "application"
-                    )
-                elif control_type == "readSkillMd":
-                    result = self.skills_manager.read_skill_md(control_args["name"])
-                    self.send_ai_message(
-                        f"读取SKILL.md操作已完成,文件内容:{result['content']}",
-                        "application",
-                    )
-                self.on_ai_send_message_handler()
-        except Exception as e:
-            print("[异常]", e)
-
     def send_tools_ai_message(self, prompt, image_source):
         finish_reason = None
         if self.config.setdefault("is_multimodal", ""):
@@ -359,14 +257,22 @@ _______       ________      ________      ___  ___      _________    ________   
                         }
                     },
                 )
-                print(
-                    "enabled"
-                    if self.config.setdefault("thinking", False)
-                    else "disabled"
-                )
-                choice = completion.choices[0]
-                finish_reason = choice.finish_reason
-                message: Any = choice.message
+                print(completion)
+                if completion.choices:
+                    choice = completion.choices[0]
+                    finish_reason = choice.finish_reason
+                    message: Any = choice.message
+                else:
+                    choice = None
+                    finish_reason = "stop"
+                    message: Any = SimpleNamespace(
+                        **{
+                            "role": "assistant",
+                            "content": "[异常] 模型不存在有效输出",
+                            "name": "system_notice",
+                            "reasoning_content": str(completion),
+                        }
+                    )
 
                 if message:
                     self.push_messages(message)
@@ -403,7 +309,11 @@ _______       ________      ________      ___  ___      _________    ________   
                                 }
                             )
                 self.on_ai_send_message_handler()
-            if finish_reason == "stop" and choice.message.content:
+            if (
+                finish_reason == "stop"
+                and choice is not None
+                and choice.message.content
+            ):
                 self.on_ai_send_message_handler()
         except Exception as e:
             print("[异常] ", e)
@@ -431,12 +341,8 @@ _______       ________      ________      ___  ___      _________    ________   
             image_add_lim(screenshot_path)
             if user_content.split()[0] in self.commands.keys():
                 self.do_command(user_content)
-            elif self.config.get("tool_calls"):
-                self.send_tools_ai_message(user_content, screenshot_path)
             else:
-                ai_response = self.send_image_to_ai(input_content, screenshot_path)
-                print(ai_response)
-                self.handle_ai_message(ai_response, input_content)
+                self.send_tools_ai_message(user_content, screenshot_path)
             self.try_recap_messages()
             self.on_ai_send_message_handler()
 
@@ -497,8 +403,8 @@ _______       ________      ________      ___  ___      _________    ________   
 
         # 构建初始消息
 
-        self.messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
-        self.full_messages: Any = [{"role": "system", "content": NO_TOOLS_PROMPT}]
+        self.messages: Any = [{"role": "system", "content": TOOLS_PROMPT}]
+        self.full_messages: Any = [{"role": "system", "content": TOOLS_PROMPT}]
 
         # 加载插件
         self.plugins_manager.load_plugins()

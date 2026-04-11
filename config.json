@@ -21,8 +21,7 @@
                     "test"
                 ],
                 "temperature": "1",
-                "thinking": true,
-                "tool_calls": true
+                "thinking": true
             }
         ]
     },
@@ -41,14 +40,13 @@
         "model": "使用模型",
         "no_detect_plugin": "不再安装依赖的插件列表",
         "temperature": "温度设置",
-        "thinking": "模型思考功能",
-        "tool_calls": "(不建议改变) 使用OpenAI规范ToolCalls"
+        "thinking": "模型思考功能"
     },
     "tips": [
         "WoW!",
         "TGAI好吃",
         "无人区"
     ],
-    "version": 3,
+    "version": 4,
     "webui": {}
 }
