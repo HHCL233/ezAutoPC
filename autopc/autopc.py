@@ -99,8 +99,10 @@ _______       ________      ________      ___  ___      _________    ________   
                     [
                         {
                             "arguments": {
-                                "is_multimodal": self.config["is_multimodal"],
-                                "prompt": self.config["lines_prompt"],
+                                "is_multimodal": self.config.setdefault(
+                                    "is_multimodal", False
+                                ),
+                                "prompt": self.config.setdefault("lines_prompt", ""),
                                 "skills": self.skills,
                             },
                         }
@@ -160,7 +162,7 @@ _______       ________      ________      ___  ___      _________    ________   
             ]
 
             completion = self.client.chat.completions.create(
-                model=self.config["model"],
+                model=self.config.setdefault("model", ""),
                 temperature=0.6,
                 messages=recap_messages,
                 tools=self.tools,
@@ -181,7 +183,9 @@ _______       ________      ________      ___  ___      _________    ________   
 
     def try_recap_messages(self):
         token = self.get_messages_token()
-        if token["token"] >= (int(self.config["context_window"]) * 0.75):
+        if token["token"] >= (
+            int(self.config.setdefault("context_window", "128000")) * 0.75
+        ):
             self.push_messages(
                 {
                     "role": "assistant",
@@ -211,7 +215,7 @@ _______       ________      ________      ___  ___      _________    ________   
         return self.skills_manager.read_skill_md(control_arguments["name"])
 
     def send_image_to_ai(self, prompt, image_source, is_local=True):
-        if self.config["is_multimodal"]:
+        if self.config.setdefault("is_multimodal"):
             new_messages = {
                 "role": "user",
                 "name": "user",
@@ -238,15 +242,17 @@ _______       ________      ________      ___  ___      _________    ________   
             self.push_messages(new_messages)
 
         try:
-            self.client.api_key = self.config["api_key"]
-            self.client.base_url = self.config["base_url"]
+            self.client.api_key = self.config.setdefault("api_key", "")
+            self.client.base_url = self.config.setdefault("base_url", "")
             response = self.client.chat.completions.create(
-                model=self.config["model"],
+                model=self.config.setdefault("model", ""),
                 messages=self.messages,
-                temperature=float(self.config["temperature"]),
+                temperature=float(self.config.setdefault("temperature", "")),
                 extra_body={
                     "thinking": {
-                        "type": "enabled" if self.config["thinking"] else "disabled"
+                        "type": "enabled"
+                        if self.config.setdefault("thinking", False)
+                        else "disabled"
                     }
                 },
             )
@@ -312,7 +318,7 @@ _______       ________      ________      ___  ___      _________    ________   
 
     def send_tools_ai_message(self, prompt, image_source):
         finish_reason = None
-        if self.config["is_multimodal"]:
+        if self.config.setdefault("is_multimodal", ""):
             self.push_messages(
                 {
                     "role": "user",
@@ -341,17 +347,23 @@ _______       ________      ________      ___  ___      _________    ________   
             while finish_reason is None or finish_reason == "tool_calls":
                 self.on_ai_send_message_handler()
                 completion = self.client.chat.completions.create(
-                    model=self.config["model"],
-                    temperature=float(self.config["temperature"]),
+                    model=self.config.setdefault("model", ""),
+                    temperature=float(self.config.setdefault("temperature", 0.6)),
                     messages=self.messages,
                     tools=self.tools,
                     extra_body={
                         "thinking": {
-                            "type": "enabled" if self.config["thinking"] else "disabled"
+                            "type": "enabled"
+                            if self.config.setdefault("thinking", False)
+                            else "disabled"
                         }
                     },
                 )
-                print("enabled" if self.config["thinking"] else "disabled")
+                print(
+                    "enabled"
+                    if self.config.setdefault("thinking", False)
+                    else "disabled"
+                )
                 choice = completion.choices[0]
                 finish_reason = choice.finish_reason
                 message: Any = choice.message
@@ -407,8 +419,8 @@ _______       ________      ________      ___  ___      _________    ________   
                 "type": type,
                 "arguments": {
                     "content": user_content,
-                    "is_multimodal": self.config["is_multimodal"],
-                    "prompt": self.config["lines_prompt"],
+                    "is_multimodal": self.config.setdefault("is_multimodal", False),
+                    "prompt": self.config.setdefault("lines_prompt", False),
                     "skills": self.skills,
                 },
             }
@@ -467,7 +479,9 @@ _______       ________      ________      ___  ___      _________    ________   
     def read_config(self):
         # 初始化配置管理器
         self.config_manager = ConfigManager()
-        self.config = self.config_manager.read_config(self.BASE_DIR)
+        self.config = self.config_manager.read_config(
+            self.BASE_DIR, os.path.expanduser("~/.ezautopc")
+        )
 
         # 初始化其他管理器
         self.skills_manager = SkillsManager(self.BASE_DIR)
@@ -477,8 +491,8 @@ _______       ________      ________      ___  ___      _________    ________   
         # 初始化技能和MCP
         self.tools: list = TOOLS
         self.skills = self.skills_manager.get_skills_info()
-        self.client.api_key = self.config["api_key"]
-        self.client.base_url = self.config["base_url"]
+        self.client.api_key = self.config.setdefault("api_key", "")
+        self.client.base_url = self.config.setdefault("base_url", "")
         asyncio.run(self.mcp_manager.start_all_mcp())
 
         # 构建初始消息
@@ -504,3 +518,6 @@ _______       ________      ________      ___  ___      _________    ________   
     def push_messages(self, message):
         self.messages.append(message)
         self.full_messages.append(message)
+
+    def exit_autopc(self):
+        os._exit(0)

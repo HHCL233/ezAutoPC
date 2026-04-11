@@ -16,7 +16,6 @@ interface PageItem {
   children: PageChild[]
 }
 export type PageKey = 'home' | 'chat' | 'setting' | 'about'
-
 export const usePagesStore = defineStore('pages', () => {
   const router = useRouter()
   const route = useRoute()

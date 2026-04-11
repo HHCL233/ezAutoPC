@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, send_from_directory
 from autopc import AutoPC
+from autopc.config import ConfigManager
 from flask_socketio import SocketIO, emit
 import os
 import time
@@ -71,7 +72,8 @@ def putConfig():
     try:
         jsonConfig = request.json
         configStr = json.dumps(jsonConfig, indent=4, ensure_ascii=False)
-        with open("config.json", encoding="utf-8", mode="w") as config:
+        home_dir = os.path.expanduser("~/.ezautopc/config.json")
+        with open(home_dir, encoding="utf-8", mode="w") as config:
             config.write(configStr)
             config.close()
             autopc.read_config()
@@ -81,6 +83,14 @@ def putConfig():
             }
     except Exception as e:
         return {"success": False, "message": f"配置文件写入失败: {e}"}
+
+
+@app.route("/api/update-config", methods=["POST"])
+def updateConfig():
+    global autopc
+    update_info = ConfigManager.update_config(BASE_DIR)
+    autopc = AutoPC()
+    return update_info
 
 
 # 接口:获取配置

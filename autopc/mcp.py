@@ -49,9 +49,10 @@ class MCPManager:
                                 self.autopc.tool_map[tool_key] = _wrapper
                             print(f"[MCP] {name} 工具注册成功")
                 else:
-                    async with stdio_client(
-                        cfg["command"], cfg.get("args", []), cfg.get("env", {})
-                    ) as (r, w):
+                    async with stdio_client(cfg["command"], cfg.get("args", [])) as (
+                        r,
+                        w,
+                    ):
                         async with ClientSession(r, w) as session:
                             await session.initialize()
                             self.sessions[name] = session
