@@ -33,6 +33,9 @@ class PluginsManager:
             if requirements_file.exists():
                 # 依赖安装
                 print(f"[插件管理] 检测到 {item} 存在依赖文件")
+                if item in self.autopc.config["no_detect_plugin"]:
+                    print(f"[插件管理] {item} 在排除列表内,不安装依赖")
+                    return
                 is_install_requirements = input(
                     f"[插件管理] 是否在当前环境安装 {item} 的依赖? (y/N)"
                 )

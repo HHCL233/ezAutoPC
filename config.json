@@ -17,38 +17,14 @@
                     }
                 },
                 "model": "kimi-k2",
+                "no_detect_plugin": [
+                    "test"
+                ],
                 "temperature": "1",
                 "thinking": true,
                 "tool_calls": true
             }
-        ],
-        "template": {
-            "api_key": "",
-            "base_url": "https://api.moonshot.cn/v1",
-            "context_window": 128000,
-            "is_multimodal": true,
-            "lines_prompt": "",
-            "mcpServers": {
-                "server1": {
-                    "alwaysAllow": [
-                        "tool1",
-                        "tool2"
-                    ],
-                    "args": [
-                        "/path/to/server.py"
-                    ],
-                    "command": "python",
-                    "disabled": false,
-                    "env": {
-                        "API_KEY": "your_api_key"
-                    }
-                }
-            },
-            "model": "kimi-k2.5",
-            "temperature": "1",
-            "thinking": true,
-            "tool_calls": true
-        }
+        ]
     },
     "descriptions": {
         "api_key": "AI提供商密钥",
@@ -63,6 +39,7 @@
         "mcp_server_url": "MCP服务端URL",
         "mcp_servers": "MCP服务端配置列表",
         "model": "使用模型",
+        "no_detect_plugin": "不再安装依赖的插件列表",
         "temperature": "温度设置",
         "thinking": "模型思考功能",
         "tool_calls": "(不建议改变) 使用OpenAI规范ToolCalls"

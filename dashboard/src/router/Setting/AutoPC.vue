@@ -43,7 +43,7 @@ const changeConfigIndex = (async (index: number) => {
 })
 
 const newConfig = (async () => {
-    config.config.autopc.config_list.push(JSON.parse(JSON.stringify(config.config.autopc.template)))
+    config.config.autopc.config_list.push(JSON.parse(JSON.stringify(config.config.autopc.config_list[config.config.autopc.config_index - 1])))
     await config.pushConfig()
     correctCurrentIndex(true)
 })
