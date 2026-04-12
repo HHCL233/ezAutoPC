@@ -1,4 +1,4 @@
-from autopc.api.event import registr_command
+from autopc.api.event import registr_command, registr_ai_send_message_callback
 import requests
 
 
@@ -8,3 +8,10 @@ def test_command(command, url):
     print("你输入了url:", url)
     content = requests.get(url)
     return "网站内容:" + content.text
+
+
+"""
+@registr_ai_send_message_callback()
+def test_callback(messages):
+    print(messages)
+"""

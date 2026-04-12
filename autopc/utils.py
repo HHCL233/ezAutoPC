@@ -71,6 +71,28 @@ def screenshot() -> str | None:
         return None
 
 
+def dictionary_update(content: dict, contrast_content: dict):
+    """
+    将字典对比更新
+    :param content: 原字典内容
+    :param contrast_content: 对比字典
+    :return: 更新后字典
+    """
+    new_content = {}
+    for key in contrast_content:
+        if key in content:
+            if isinstance(content[key], dict) and not key.endswith("_"):
+                this_dict = dictionary_update(content[key], contrast_content[key])
+                new_content[key] = this_dict
+            elif key.startswith("_"):
+                new_content[key] = contrast_content[key]
+            else:
+                new_content[key] = content[key]
+        else:
+            new_content[key] = contrast_content[key]
+    return new_content
+
+
 def image_add_lim(path: str):
     """
     在图片上添加网格和坐标

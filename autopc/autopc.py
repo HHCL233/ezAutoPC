@@ -214,13 +214,13 @@ _______       ________      ________      ___  ___      _________    ________   
     def _wrap_read_skill_md(self, control_arguments):
         return self.skills_manager.read_skill_md(control_arguments["name"])
 
-    def send_tools_ai_message(self, prompt, image_source):
+    def send_tools_ai_message(self, prompt, image_source, name=None):
         finish_reason = None
         if self.config.setdefault("is_multimodal", ""):
             self.push_messages(
                 {
                     "role": "user",
-                    "name": "user",
+                    "name": "user" if name is None else name,
                     "content": [
                         {"type": "text", "text": prompt},
                         {
@@ -237,7 +237,7 @@ _______       ________      ________      ___  ___      _________    ________   
             self.push_messages(
                 {
                     "role": "user",
-                    "name": "user",
+                    "name": "user" if name is None else name,
                     "content": [{"type": "text", "text": prompt}],
                 }
             )
@@ -322,7 +322,7 @@ _______       ________      ________      ___  ___      _________    ________   
             )
             self.on_ai_send_message_handler()
 
-    def send_ai_message(self, user_content, type="user"):
+    def send_ai_message(self, user_content, type="user", name=None):
         print(self.config)
         input_json = [
             {
@@ -342,7 +342,7 @@ _______       ________      ________      ___  ___      _________    ________   
             if user_content.split()[0] in self.commands.keys():
                 self.do_command(user_content)
             else:
-                self.send_tools_ai_message(user_content, screenshot_path)
+                self.send_tools_ai_message(user_content, screenshot_path, name)
             self.try_recap_messages()
             self.on_ai_send_message_handler()
 
@@ -391,7 +391,6 @@ _______       ________      ________      ___  ___      _________    ________   
 
         # 初始化其他管理器
         self.skills_manager = SkillsManager(self.BASE_DIR)
-        self.plugins_manager = PluginsManager(self)
         self.mcp_manager = MCPManager(self)
 
         # 初始化技能和MCP
@@ -407,6 +406,7 @@ _______       ________      ________      ___  ___      _________    ________   
         self.full_messages: Any = [{"role": "system", "content": TOOLS_PROMPT}]
 
         # 加载插件
+        self.plugins_manager = PluginsManager(self)
         self.plugins_manager.load_plugins()
 
         self._init_prompts()

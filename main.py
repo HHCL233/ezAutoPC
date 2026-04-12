@@ -88,7 +88,7 @@ def putConfig():
 @app.route("/api/update-config", methods=["POST"])
 def updateConfig():
     global autopc
-    update_info = ConfigManager.update_config(BASE_DIR)
+    update_info = ConfigManager.relocate_config(BASE_DIR)
     autopc = AutoPC()
     return update_info
 

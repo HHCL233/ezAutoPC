@@ -6,7 +6,7 @@ const config = useConfigStore()
 <template>
     <div class="about">
         <h1>ezAutoPC</h1>
-        <span>版本 {{ config?.config?.version }}</span>
+        <span>版本 {{ config?.config?._version }}</span>
     </div>
 </template>
 <style scoped>

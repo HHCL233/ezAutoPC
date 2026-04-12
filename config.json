@@ -8,7 +8,7 @@
                 "context_window": "128000",
                 "is_multimodal": false,
                 "lines_prompt": "",
-                "mcpServers": {
+                "_mcp_servers": {
                     "server1": {
                         "disabled": false,
                         "headers": {},
@@ -31,12 +31,7 @@
         "context_window": "模型上下文最高Token,接近该值后将自动压缩Token",
         "is_multimodal": "多模态功能",
         "lines_prompt": "用户提示词",
-        "mcpServers": "MCP服务器配置",
-        "mcp_server_enabled": "是否启用该MCP服务端",
-        "mcp_server_name": "MCP服务端名称",
-        "mcp_server_timeout": "请求超时时间(秒)",
-        "mcp_server_url": "MCP服务端URL",
-        "mcp_servers": "MCP服务端配置列表",
+        "_mcp_servers": "MCP服务器配置",
         "model": "使用模型",
         "no_detect_plugin": "不再安装依赖的插件列表",
         "temperature": "温度设置",
@@ -47,6 +42,6 @@
         "TGAI好吃",
         "无人区"
     ],
-    "version": 4,
+    "_version": 4,
     "webui": {}
 }

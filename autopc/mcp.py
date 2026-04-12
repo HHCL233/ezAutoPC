@@ -9,7 +9,7 @@ from functools import partial
 class MCPManager:
     def __init__(self, autopc):
         self.autopc = autopc
-        self.server_config = autopc.config["mcpServers"]
+        self.server_config = autopc.config["_mcp_servers"]
         self.sessions = {}
 
     async def start_all_mcp(self):

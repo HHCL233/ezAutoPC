@@ -2,6 +2,7 @@ import os
 import json
 from typing import Dict, Any
 import sys
+from autopc.utils import dictionary_update
 
 
 class ConfigManager:
@@ -18,6 +19,7 @@ class ConfigManager:
             config_path = os.path.join(config_dir, "config.json")
             if os.path.exists(config_path):
                 print("[读取配置] config 文件存在,开始读取文件内容...")
+                ConfigManager.update_config(base_dir)
                 with open(config_path, "r", encoding="utf-8") as f:
                     config_content = f.read()
                     config_json = json.loads(config_content)
@@ -41,7 +43,7 @@ class ConfigManager:
                     print("[读取配置] 正在退出程序...")
                     sys.exit()
                 else:
-                    config_content = ConfigManager.update_config(base_dir)
+                    config_content = ConfigManager.relocate_config(base_dir)
                     if config_content["success"]:
                         return ConfigManager.read_config(base_dir, config_dir)
                     else:
@@ -72,7 +74,7 @@ class ConfigManager:
             return {}
 
     @staticmethod
-    def update_config(base_dir: str):
+    def relocate_config(base_dir: str):
         """
         将项目配置从根目录迁移至家目录
         :param base_dir: 项目根目录
@@ -97,6 +99,34 @@ class ConfigManager:
             else:
                 print("[更新配置] 读取配置失败")
                 return {"success": False, "error": "读取配置失败"}
+        except Exception as e:
+            print("[更新配置] 更新配置失败: ", e)
+            return {"success": False, "error": "读取配置失败"}
+
+    @staticmethod
+    def update_config(base_dir: str):
+        """
+        更新配置版本
+        :param base_dir: 模板根目录
+        :return: 完成状态
+        """
+        home_dir = os.path.expanduser("~/.ezautopc/config.json")
+        try:
+            originally_config_path = os.path.join(base_dir, "config.json")
+            with open(originally_config_path, "r", encoding="utf-8") as f:
+                print("[更新配置] 已读取模板配置")
+                template_content = json.loads(f.read())
+            with open(home_dir, "r", encoding="utf-8") as f:
+                print("[更新配置] 已读取当前配置")
+                config_content = json.loads(f.read())
+
+            new_content = dictionary_update(config_content, template_content)
+            print(new_content)
+            with open(home_dir, "w", encoding="utf-8") as f:
+                print(f"[更新配置] 正在向 {home_dir} 写入配置内容...")
+                f.write(json.dumps(new_content, ensure_ascii=False, indent=4))
+                print(f"[更新配置] {home_dir} 写入完成")
+                return {"success": True, "config": new_content}
         except Exception as e:
             print("[更新配置] 更新配置失败: ", e)
             return {"success": False, "error": "读取配置失败"}
