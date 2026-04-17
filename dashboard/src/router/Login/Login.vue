@@ -47,14 +47,28 @@ const login = async () => {
         });
     }
 }
+
+const help = () => {
+    dialog({
+        headline: "创建账号",
+        description: "在没有登录过一次的情况下,首次登录时密码默认为 admin 账号密码。",
+        actions: [
+            {
+                text: "确定",
+            }
+        ]
+    });
+}
 </script>
 <template>
     <div class="login">
         <h1 class="login-title">登录 ezAutoPC</h1>
-        <mdui-text-field variant="outlined" label="账号" class="login-text-field" ref="loginAccount"></mdui-text-field>
+        <mdui-text-field variant="outlined" label="账号" class="login-text-field" ref="loginAccount"
+            value="admin"></mdui-text-field>
         <mdui-text-field variant="outlined" label="密码" type="password" toggle-password class="login-text-field"
             ref="loginPassword"></mdui-text-field>
-        <mdui-button class="login-button" @click="login()">登录</mdui-button>
+        <mdui-button variant="filled" class="login-button" @click="login()">登录</mdui-button>
+        <mdui-button variant="text" class="login-help" @click="help()">创建账号</mdui-button>
     </div>
 </template>
 <style scoped>
@@ -68,6 +82,11 @@ const login = async () => {
 
 .login-text-field {
     margin: 0 16px 16px 0;
+}
+
+.login-help {
+    float: right;
+    margin: 0 8px;
 }
 
 .login-button {
