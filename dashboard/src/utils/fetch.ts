@@ -2,12 +2,12 @@ import io from 'socket.io-client';
 
 export async function generalFetch(url = "", data = {}) {
     try {
-        const response = await fetch(`http://${location.hostname}:5000/${url}`, data);
+        const response = await fetch(`http://${location.hostname}:5000/${url}`, { ...data, ...{ credentials: 'include' } });
         return response
     } catch (error) {
         console.log(`请求端点1错误 ${error},尝试其他URL`);
         try {
-            const response = await fetch(`http://${location.host}/${url}`, data);
+            const response = await fetch(`http://${location.host}/${url}`, { ...data, ...{ credentials: 'include' } });
             return response
         } catch (error2) {
             throw new Error(`所有请求端点均失败,最后错误:${error2}`);
@@ -19,9 +19,10 @@ export async function generalFetch(url = "", data = {}) {
 export function generalWS(url = "", errorCallback?: () => void) {
     try {
         const socket = io(`http://${location.hostname}:5000/${url}`, {
-            transports: ['websocket'],
+            transports: ['polling', 'websocket'],
             reconnection: false,
             reconnectionAttempts: 5,
+            withCredentials: true,
         });
         return socket
     } catch (error) {
@@ -31,6 +32,7 @@ export function generalWS(url = "", errorCallback?: () => void) {
                 transports: ['websocket'],
                 reconnection: true,
                 reconnectionAttempts: 5,
+                withCredentials: true
             });
             return socket
         } catch (error2) {

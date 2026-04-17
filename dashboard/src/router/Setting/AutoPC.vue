@@ -102,7 +102,7 @@ const showObjectEdit = ((value: object, name: string) => {
 
 <template>
     <div class="setting-autopc">
-        <h2>本体设置</h2>
+        <h2 class="setting-title">本体设置</h2>
         <mdui-tabs value="tab-0" class="setting-autopc-config-tabs" full-width ref="settingAutopcConfigTabs">
             <mdui-tab v-for="(value, index) in config.config?.autopc?.config_list" :value="`tab-${index}`"
                 @click="changeConfigIndex(Number(index))" @mousedown="middleDeleteConfig($event, Number(index))"
@@ -138,6 +138,10 @@ const showObjectEdit = ((value: object, name: string) => {
 </template>
 
 <style scoped>
+.setting-title {
+    font-weight: normal;
+}
+
 .setting-autopc-lists {
     margin: -8px -16px;
 }

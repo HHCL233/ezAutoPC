@@ -99,7 +99,7 @@ TOOLS: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "terminal",
-            "description": "终端操作，执行单条bash指令，优先使用，可启动带有GUI的应用，不要启动命令行程序",
+            "description": "终端操作，执行单条bash指令，不可获取运行指令的输出内容，不要启动命令行程序，优先使用终端相关操作而不是鼠标相关操作",
             "parameters": {
                 "type": "object",
                 "required": ["command"],
@@ -116,7 +116,7 @@ TOOLS: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "returnTerminal",
-            "description": "可返回终端操作，执行单条bash指令，可获取运行指令的输出内容，可运行命令行程序",
+            "description": "可返回终端操作，执行单条bash指令，可获取运行指令的输出内容，可运行命令行程序，优先使用终端相关操作而不是鼠标相关操作",
             "parameters": {
                 "type": "object",
                 "required": ["command"],

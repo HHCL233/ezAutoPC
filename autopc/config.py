@@ -121,7 +121,6 @@ class ConfigManager:
                 config_content = json.loads(f.read())
 
             new_content = dictionary_update(config_content, template_content)
-            print(new_content)
             with open(home_dir, "w", encoding="utf-8") as f:
                 print(f"[更新配置] 正在向 {home_dir} 写入配置内容...")
                 f.write(json.dumps(new_content, ensure_ascii=False, indent=4))

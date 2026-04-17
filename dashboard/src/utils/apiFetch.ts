@@ -1,4 +1,5 @@
 import { generalFetch } from '@/utils/fetch';
+import router from '@/router'
 
 interface GetConfigAPI {
     config: any,
@@ -19,6 +20,9 @@ export class ApiFetch {
     static async getConfig() {
         try {
             const messages = await generalFetch("api/config")
+            if (messages.status == 401) {
+                router.push("/login")
+            }
             const data = await messages.json() as GetConfigAPI
             return { 'json': data['config'], 'success': true }
         } catch (error) {

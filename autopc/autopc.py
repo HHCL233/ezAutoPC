@@ -216,7 +216,7 @@ _______       ________      ________      ___  ___      _________    ________   
 
     def send_tools_ai_message(self, prompt, image_source, name=None):
         finish_reason = None
-        if self.config.setdefault("is_multimodal", ""):
+        if self.config.setdefault("is_multimodal", "") and image_source:
             self.push_messages(
                 {
                     "role": "user",
@@ -323,28 +323,17 @@ _______       ________      ________      ___  ___      _________    ________   
             self.on_ai_send_message_handler()
 
     def send_ai_message(self, user_content, type="user", name=None):
-        print(self.config)
-        input_json = [
-            {
-                "type": type,
-                "arguments": {
-                    "content": user_content,
-                    "is_multimodal": self.config.setdefault("is_multimodal", False),
-                    "prompt": self.config.setdefault("lines_prompt", False),
-                    "skills": self.skills,
-                },
-            }
-        ]
-        input_content = json.dumps(input_json)
-        screenshot_path = screenshot()
+        screenshot_path = None
+        if self.config.setdefault("is_multimodal", ""):
+            screenshot_path = screenshot()
         if screenshot_path:
             image_add_lim(screenshot_path)
-            if user_content.split()[0] in self.commands.keys():
-                self.do_command(user_content)
-            else:
-                self.send_tools_ai_message(user_content, screenshot_path, name)
-            self.try_recap_messages()
-            self.on_ai_send_message_handler()
+        if user_content.split()[0] in self.commands.keys():
+            self.do_command(user_content)
+        else:
+            self.send_tools_ai_message(user_content, screenshot_path, name)
+        self.try_recap_messages()
+        self.on_ai_send_message_handler()
 
     def do_command(self, command):
         self.push_messages(

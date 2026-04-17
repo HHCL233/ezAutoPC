@@ -32,7 +32,7 @@ const pushPage = ((name: PageKey) => {
   <mdui-navigation-drawer close-on-overlay-click class="items-drawer" modal ref="itemsDrawer">
     <mdui-list>
       <mdui-list-item rounded v-for="(value, key, index) in pages.pageList" @click="pushPage(key)">{{ value.title
-      }}</mdui-list-item>
+        }}</mdui-list-item>
     </mdui-list>
   </mdui-navigation-drawer>
   <RouterView />

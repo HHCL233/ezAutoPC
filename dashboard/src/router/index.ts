@@ -27,6 +27,11 @@ const router = createRouter({
     name: 'UpdateConfig',
     component: () => import('@/router/UpdateConfig/UpdateConfig.vue'),
     meta: { title: '更新配置向导' }
+  }, {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/router/Login/Login.vue'),
+    meta: { title: '登录' }
   }]
 })
 

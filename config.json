@@ -43,5 +43,7 @@
         "无人区"
     ],
     "_version": 4,
-    "webui": {}
+    "webui": {
+        "password": ""
+    }
 }

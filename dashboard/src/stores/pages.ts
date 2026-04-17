@@ -15,7 +15,7 @@ interface PageItem {
   title: string
   children: PageChild[]
 }
-export type PageKey = 'home' | 'chat' | 'setting' | 'about'
+export type PageKey = 'home' | 'chat' | 'setting' | 'about' | 'login'
 export const usePagesStore = defineStore('pages', () => {
   const router = useRouter()
   const route = useRoute()
@@ -46,6 +46,10 @@ export const usePagesStore = defineStore('pages', () => {
     }, about: {
       path: 'about',
       title: '关于',
+      children: []
+    }, login: {
+      path: 'login',
+      title: '登录',
       children: []
     },
   })

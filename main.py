@@ -1,13 +1,25 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, jsonify
 from autopc import AutoPC
 from autopc.config import ConfigManager
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, disconnect
 import os
 import time
 import json
 from flask_cors import CORS
 import sys
 from pathlib import Path
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    create_refresh_token,
+    jwt_required,
+    get_jwt_identity,
+    decode_token,
+    set_access_cookies,
+    set_refresh_cookies,
+)
+from datetime import timedelta
+import bcrypt
 
 # 自动添加包
 ROOT = Path(__file__).parent
@@ -23,18 +35,57 @@ app = Flask(
     template_folder=VUE_DIST_DIR,
     static_folder=VUE_DIST_DIR,
 )
-CORS(app)
-app.config["SECRET_KEY"] = "key-1234567890"
+CORS(
+    app,
+    supports_credentials=True,
+)
+app.config["SECRET_KEY"] = (
+    "da9d19b64bf07bd70c00d2509b0c2bdb86b579ece51c0499b595b01f08a81d3b"
+)
+app.config["JWT_SECRET_KEY"] = (
+    "da9d19b64bf07bd70c00d2509b0c2bdb86b579ece51c0499b595b01f08a81d3b"
+)
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
+app.config["JWT_REFRESH_COOKIE_NAME"] = "refresh_token"
+
+app.config["JWT_COOKIE_SECURE"] = False
+app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+app.config["JWT_COOKIE_HTTPONLY"] = True
+app.config["JWT_COOKIE_PATH"] = "/"
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 # SocketIO 初始化
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",
     async_mode="threading",
+    cors_credentials=True,
+    cors_allowed_origins="*",
 )
+
+# JWT 初始化
+jwt = JWTManager(app)
 
 # 业务类实例化
 autopc = AutoPC()
+
+
+# 生成密码哈希
+def generatePasswordHash(password: str) -> str:
+    # 字符串转字节
+    passwordBytes = password.encode("utf-8")
+    # 生成随机盐
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(passwordBytes, salt)
+    # 返回字符串格式
+    return hashed.decode("utf-8")
+
+
+# 验证密码
+def verifyPasswordHash(password: str, hashedPassword: str) -> bool:
+    passwordBytes = password.encode("utf-8")
+    hashedBytes = hashedPassword.encode("utf-8")
+    return bcrypt.checkpw(passwordBytes, hashedBytes)
 
 
 # 路由:首页
@@ -47,30 +98,93 @@ def home():
 @app.route("/assets/<path:filename>")
 def serveaAssets(filename):
     assetsDir = os.path.join(VUE_DIST_DIR, "assets")
-    # 确保目录存在，避免报错
+    # 确保目录存在
     if not os.path.exists(assetsDir):
         return {"success": False, "message": "assets目录不存在"}, 404
     return send_from_directory(assetsDir, filename)
 
 
-# 接口:发送消息给AI
-@app.route("/api/sendMessages", methods=["POST"])
-def sendMessagesToAI():
-    payload = request.get_json(force=False, silent=True)
+@app.route("/set-cookie")
+def set_cookie():
+    resp = app.make_response("Cookie已设置")
+    resp.set_cookie(
+        "username",
+        "test_user",
+        max_age=3600,
+        domain=request.host,
+        path="/",
+        secure=False,
+        samesite="Lax",
+    )
+    return resp
 
-    if payload is None:
-        return {"success": False, "message": "无效的 JSON 负载"}, 400
 
-    autopc.send_ai_message(payload.get("content"))
+# 接口:登陆
+@app.route("/api/login", methods=["POST"])
+def login():
+    # 接收前端传的账号密码
+    username = request.json.get("username")
+    password = request.json.get("password")
+    configPassword = ""
 
-    return {"success": True, "message": "AI请求完成"}
+    # 简单验证
+    homeDir = os.path.expanduser("~/.ezautopc/config.json")
+    with open(homeDir, encoding="utf-8", mode="r") as config:
+        jsonConfig = json.loads(config.read())
+        configPassword = jsonConfig["webui"]["password"]
+
+    if username == "admin" and configPassword == "":
+        print("[后端] 检测到密码为空,创建")
+        configPassword = generatePasswordHash(password)
+        jsonConfig["webui"]["password"] = configPassword
+        putInfo = upPutConfig(jsonConfig)
+        if putInfo["success"]:
+            print("[后端] 已推送该密码")
+        else:
+            print("[后端] 推送密码失败")
+            return {"msg": f"{putInfo['message']}"}, 500
+
+    # 这里应该使用密码哈希
+    if username != "admin" or not verifyPasswordHash(password, configPassword):
+        return {"msg": "账号或密码错误"}, 401
+
+    # 生成令牌
+    # 这里应该存储在配置中
+    accessToken = create_access_token(
+        identity=username, expires_delta=timedelta(days=1)
+    )
+    refreshToken = create_refresh_token(identity=username)
+
+    resp = jsonify(
+        {"msg": "登录成功", "access_token": accessToken, "refresh_token": refreshToken}
+    )
+    set_access_cookies(resp, accessToken)
+    set_refresh_cookies(resp, refreshToken)
+    return resp, 200
+
+
+# 接口:刷新AccesToken
+@app.route("/api/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    currentUser = get_jwt_identity()
+
+    # 生成新的 Access Token
+    newAccessToken = create_access_token(identity=currentUser)
+
+    return {"access_token": newAccessToken}, 200
 
 
 # 接口:写入配置
 @app.route("/api/config", methods=["PUT"])
+@jwt_required()
 def putConfig():
+    jsonConfig = request.json
+    return upPutConfig(jsonConfig)
+
+
+def upPutConfig(jsonConfig):
     try:
-        jsonConfig = request.json
         configStr = json.dumps(jsonConfig, indent=4, ensure_ascii=False)
         home_dir = os.path.expanduser("~/.ezautopc/config.json")
         with open(home_dir, encoding="utf-8", mode="w") as config:
@@ -85,7 +199,9 @@ def putConfig():
         return {"success": False, "message": f"配置文件写入失败: {e}"}
 
 
+# 接口:更新配置
 @app.route("/api/update-config", methods=["POST"])
+@jwt_required()
 def updateConfig():
     global autopc
     update_info = ConfigManager.relocate_config(BASE_DIR)
@@ -95,10 +211,11 @@ def updateConfig():
 
 # 接口:获取配置
 @app.route("/api/config")
+@jwt_required()
 def getConfig():
     try:
-        home_dir = os.path.expanduser("~/.ezautopc/config.json")
-        with open(home_dir, encoding="utf-8", mode="r") as config:
+        homeDir = os.path.expanduser("~/.ezautopc/config.json")
+        with open(homeDir, encoding="utf-8", mode="r") as config:
             jsonConfig = json.loads(config.read())
             return {
                 "success": True,
@@ -142,8 +259,24 @@ def onAISendMessage():
 # SocketIO:客户端连接
 @socketio.on("connect")
 def handleConnect():
-    print("新的客户端已连接")
-    emit("response", {"msg": "已连接成功"})
+    # 从Cookie中获取token
+    token = request.cookies.get("access_token")
+    if not token:
+        print("无token,拒绝连接")
+        disconnect()
+        return
+
+    try:
+        payload = decode_token(token)
+        user_id = payload["sub"]
+
+        # 验证成功
+        print(f"用户 {user_id} 已连接")
+        emit("response", {"msg": "已连接成功"})
+    except Exception as e:
+        # 验证失败
+        print(f"token验证失败: {str(e)}")
+        disconnect()
 
 
 # SocketIO:处理消息
