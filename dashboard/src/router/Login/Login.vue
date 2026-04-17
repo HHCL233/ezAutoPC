@@ -51,7 +51,7 @@ const login = async () => {
 const help = () => {
     dialog({
         headline: "创建账号",
-        description: "在没有登录过一次的情况下,首次登录时密码默认为 admin 账号密码。",
+        description: "在没有登录过的情况下,首次登录密码默认为 admin 账号密码",
         actions: [
             {
                 text: "确定",
