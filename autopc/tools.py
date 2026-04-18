@@ -172,7 +172,7 @@ TOOLS: List[ChatCompletionToolParam] = [
                 "type": "object",
                 "required": ["url", "json", "headers", "cookies"],
                 "properties": {
-                    "name": {
+                    "url": {
                         "type": "string",
                         "description": "API的URL",
                     },
