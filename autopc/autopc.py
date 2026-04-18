@@ -1,9 +1,7 @@
 import os
 import json
-from time import sleep
-from typing import List, Dict, Any
+from typing import Any
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletionMessage
 from termcolor import colored
 import inspect
 import asyncio
@@ -70,17 +68,17 @@ _______       ________      ________      ___  ___      _________    ________   
 
         # 工具映射
         self.tool_map = {
-            "mouse": lambda args: (mouse_action(args), None)[1],
-            "click": lambda args: click_action(),
-            "doubleClick": lambda args: double_click_action(),
-            "write": lambda args: write_action(args),
-            "press": lambda args: press_action(args),
-            "terminal": lambda args: terminal_action(args),
-            "returnTerminal": lambda args: return_terminal_action(args),
+            "mouse": mouse_action,
+            "click": lambda _: click_action(),
+            "doubleClick": lambda _: double_click_action(),
+            "write": write_action,
+            "press": press_action,
+            "terminal": terminal_action,
+            "returnTerminal": return_terminal_action,
             "readSkillMd": self._wrap_read_skill_md,
-            "download": lambda args: download_file(args),
-            "getRequest": lambda args: get_request(args),
-            "postRequest": lambda args: post_request(args),
+            "download": download_file,
+            "getRequest": get_request,
+            "postRequest": post_request,
         }
 
         # 初始化
@@ -89,29 +87,26 @@ _______       ________      ________      ___  ___      _________    ________   
     def _init_prompts(self):
         """根据配置初始化提示词"""
         self.recap_prompt = RECAP_PROMPT
-
-        if self.config.get("tool_calls"):
-            print("[警告] tool_calls模式目前不稳定")
-            self.all_tools_prompt = (
-                TOOLS_PROMPT
-                + f"""
+        self.all_tools_prompt = (
+            TOOLS_PROMPT
+            + f"""
 {
-                    [
-                        {
-                            "arguments": {
-                                "is_multimodal": self.config.setdefault(
-                                    "is_multimodal", False
-                                ),
-                                "prompt": self.config.setdefault("lines_prompt", ""),
-                                "skills": self.skills,
-                            },
-                        }
-                    ]
-                }
+                [
+                    {
+                        "arguments": {
+                            "is_multimodal": self.config.setdefault(
+                                "is_multimodal", False
+                            ),
+                            "prompt": self.config.setdefault("lines_prompt", ""),
+                            "skills": self.skills,
+                        },
+                    }
+                ]
+            }
 """
-            )
-            self.messages = [{"role": "system", "content": self.all_tools_prompt}]
-            self.full_messages = self.messages.copy()
+        )
+        self.messages = [{"role": "system", "content": self.all_tools_prompt}]
+        self.full_messages = self.messages.copy()
 
     def on_ai_send_message_handler(self):
         for handler in self.on_ai_send_message:
@@ -392,13 +387,11 @@ _______       ________      ________      ___  ___      _________    ________   
         # 构建初始消息
 
         self.messages: Any = [{"role": "system", "content": TOOLS_PROMPT}]
-        self.full_messages: Any = [{"role": "system", "content": TOOLS_PROMPT}]
+        self._init_prompts()
 
         # 加载插件
         self.plugins_manager = PluginsManager(self)
         self.plugins_manager.load_plugins()
-
-        self._init_prompts()
 
     def allow_tool(self, tool_name):
         if tool_name not in self.allow_tools:

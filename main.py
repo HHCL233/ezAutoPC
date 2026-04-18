@@ -11,12 +11,9 @@ from pathlib import Path
 from flask_jwt_extended import (
     JWTManager,
     create_access_token,
-    create_refresh_token,
     jwt_required,
-    get_jwt_identity,
     decode_token,
     set_access_cookies,
-    set_refresh_cookies,
 )
 from datetime import timedelta
 import bcrypt
@@ -28,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 # 路径配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 VUE_DIST_DIR = os.path.join(BASE_DIR, "dashboard/dist")
+HOME_CONFIG = os.path.expanduser("~/.ezautopc/config.json")
 
 # Flask 实例化
 app = Flask(
@@ -45,14 +43,12 @@ app.config["SECRET_KEY"] = (
 app.config["JWT_SECRET_KEY"] = (
     "da9d19b64bf07bd70c00d2509b0c2bdb86b579ece51c0499b595b01f08a81d3b"
 )
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=1)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
 app.config["JWT_REFRESH_COOKIE_NAME"] = "refresh_token"
 
 app.config["JWT_COOKIE_SECURE"] = False
-app.config["JWT_COOKIE_SAMESITE"] = "Lax"
-app.config["JWT_COOKIE_HTTPONLY"] = True
-app.config["JWT_COOKIE_PATH"] = "/"
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 # SocketIO 初始化
@@ -128,7 +124,7 @@ def login():
     configPassword = ""
 
     # 简单验证
-    homeDir = os.path.expanduser("~/.ezautopc/config.json")
+    homeDir = os.path.expanduser(HOME_CONFIG)
     with open(homeDir, encoding="utf-8", mode="r") as config:
         jsonConfig = json.loads(config.read())
         configPassword = jsonConfig["webui"]["password"]
@@ -148,31 +144,13 @@ def login():
     if username != "admin" or not verifyPasswordHash(password, configPassword):
         return {"msg": "账号或密码错误"}, 401
 
-    # 生成令牌
-    # 这里应该存储在配置中
     accessToken = create_access_token(
         identity=username, expires_delta=timedelta(days=1)
     )
-    refreshToken = create_refresh_token(identity=username)
 
-    resp = jsonify(
-        {"msg": "登录成功", "access_token": accessToken, "refresh_token": refreshToken}
-    )
+    resp = jsonify({"msg": "登录成功", "access_token": accessToken})
     set_access_cookies(resp, accessToken)
-    set_refresh_cookies(resp, refreshToken)
     return resp, 200
-
-
-# 接口:刷新AccesToken
-@app.route("/api/refresh", methods=["POST"])
-@jwt_required(refresh=True)
-def refresh():
-    currentUser = get_jwt_identity()
-
-    # 生成新的 Access Token
-    newAccessToken = create_access_token(identity=currentUser)
-
-    return {"access_token": newAccessToken}, 200
 
 
 # 接口:写入配置
@@ -186,7 +164,7 @@ def putConfig():
 def upPutConfig(jsonConfig):
     try:
         configStr = json.dumps(jsonConfig, indent=4, ensure_ascii=False)
-        home_dir = os.path.expanduser("~/.ezautopc/config.json")
+        home_dir = os.path.expanduser(HOME_CONFIG)
         with open(home_dir, encoding="utf-8", mode="w") as config:
             config.write(configStr)
             config.close()
@@ -214,7 +192,7 @@ def updateConfig():
 @jwt_required()
 def getConfig():
     try:
-        homeDir = os.path.expanduser("~/.ezautopc/config.json")
+        homeDir = os.path.expanduser(HOME_CONFIG)
         with open(homeDir, encoding="utf-8", mode="r") as config:
             jsonConfig = json.loads(config.read())
             return {
@@ -227,20 +205,16 @@ def getConfig():
 
 
 def serializeMessages(messages):
-    serialized = []
-    for msg in messages:
-        try:
-            if hasattr(msg, "model_dump"):
-                serialized.append(msg.model_dump())
-            elif isinstance(msg, dict):
-                serialized.append(msg)
-            elif hasattr(msg, "__dict__"):
-                serialized.append(msg.__dict__)
-            else:
-                serialized.append(str(msg))
-        except Exception:
-            serialized.append({"role": "assistant", "content": str(msg)})
-    return serialized
+    return [
+        msg.model_dump()
+        if hasattr(msg, "model_dump")
+        else msg
+        if isinstance(msg, dict)
+        else msg.__dict__
+        if hasattr(msg, "__dict__")
+        else str(msg)
+        for msg in messages
+    ]
 
 
 def onAISendMessage():
@@ -352,7 +326,7 @@ if __name__ == "__main__":
     if os.path.exists(indexHtmlPath):
         print("[WebUI] WebUI文件检测成功,启动Web服务...")
         autopc.on_ai_send_message.append(onAISendMessage)
-        socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        socketio.run(app, host="0.0.0.0", port=5000, debug=False, use_reloader=False)
     else:
         print("[警告] 未检测到WebUI文件")
         print(f"[警告] 请在目录 {indexHtmlPath} 安装WebUI文件!")

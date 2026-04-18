@@ -1,9 +1,7 @@
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.client.stdio import stdio_client
-import asyncio
 import traceback
-from functools import partial
 
 
 class MCPManager:
@@ -100,7 +98,12 @@ class MCPManager:
                         result = await session.call_tool(
                             name=tool_name, arguments=control_arguments
                         )
-                        return {"success": True, "result": result.content[0].text}
+                        return {
+                            "success": True,
+                            "result": getattr(
+                                result.content[0], "text", "[非文本内容]"
+                            ),
+                        }
         except Exception as e:
             print(f"\n[MCP] {session_name} 操作失败：", e)
             return {"success": False, "error": str(e)}
