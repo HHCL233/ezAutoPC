@@ -298,3 +298,11 @@ def return_terminal_action(control_arguments: dict):
     print("[执行命令]", run_command)
     result = subprocess.run(run_command, shell=True, capture_output=True, text=True)
     return {"success": True, "content": result.stdout.strip()}
+
+
+def read_autopc_config():
+    from autopc.config import ConfigManager
+
+    config = ConfigManager.read_config(os.getcwd(), os.path.expanduser("~/.ezautopc"))
+    print("[读取配置] 已读取配置内容")
+    return {"success": True, "content": config}

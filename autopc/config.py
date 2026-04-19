@@ -47,13 +47,10 @@ class ConfigManager:
                     if config_content["success"]:
                         return ConfigManager.read_config(base_dir, config_dir)
                     else:
-                        print("[读取配置] 读取失败")
-                        print("[读取配置] 正在退出程序...")
-                        sys.exit()
+                        return {"error": True}
         except Exception as e:
-            print("[读取配置] 读取失败: ", e)
-            print("[读取配置] 正在退出程序...")
-            sys.exit()
+            print("[读取配置] 遇到了错误:", e)
+            return {"error": True}
 
     @staticmethod
     def read_full_config(base_dir: str) -> Dict[str, Any]:

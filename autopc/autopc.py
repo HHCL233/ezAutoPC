@@ -6,6 +6,7 @@ from termcolor import colored
 import inspect
 import asyncio
 from types import SimpleNamespace
+import sys
 
 from .prompts import TOOLS_PROMPT, RECAP_PROMPT
 from .tools import TOOLS
@@ -26,6 +27,7 @@ from .utils import (
     return_terminal_action,
     get_request,
     post_request,
+    read_autopc_config,
 )
 from .plugins import PluginsManager
 from .mcp import MCPManager
@@ -79,6 +81,7 @@ _______       ________      ________      ___  ___      _________    ________   
             "download": download_file,
             "getRequest": get_request,
             "postRequest": post_request,
+            "readAutoPCConfig": lambda _: read_autopc_config(),
         }
 
         # 初始化
@@ -372,6 +375,11 @@ _______       ________      ________      ___  ___      _________    ________   
         self.config = self.config_manager.read_config(
             self.BASE_DIR, os.path.expanduser("~/.ezautopc")
         )
+
+        if self.config == {"error": True}:
+            print("[读取配置] 读取失败")
+            print("[读取配置] 正在退出程序...")
+            sys.exit()
 
         # 初始化其他管理器
         self.skills_manager = SkillsManager(self.BASE_DIR)

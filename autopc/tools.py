@@ -192,4 +192,16 @@ TOOLS: List[ChatCompletionToolParam] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "readAutoPCConfig",
+            "description": "读取ezAutoPC的配置",
+            "parameters": {
+                "type": "object",
+                "required": [],
+                "properties": {},
+            },
+        },
+    },
 ]

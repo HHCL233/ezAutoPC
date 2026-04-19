@@ -17,7 +17,6 @@ const { messagesList, currentMessage, sendMessage, toolList, allowTools, changeA
 
 const updataCurrentMessage = ((message: any) => {
     currentMessage.value = message.target.value
-    console.log(message.target.value)
 })
 
 const scrollToBottom = () => {
