@@ -14,6 +14,8 @@ import matplotlib
 # 固定matplotlib后端
 matplotlib.use("Agg")
 
+tasks_list = []
+
 
 def init_readline():
     """初始化命令行输入支持"""
@@ -341,7 +343,7 @@ def insert_file(control_arguments: dict) -> dict:
         with open(control_arguments["path"], mode="r") as f:
             file_content = f.readlines()
         file_content.insert(
-            control_arguments["insert_line"], control_arguments["content"]
+            control_arguments["insertLine"], control_arguments["content"]
         )
         with open(control_arguments["path"], mode="w") as f:
             f.writelines(file_content)
@@ -355,12 +357,26 @@ def delete_file(control_arguments: dict) -> dict:
         file_content = []
         with open(control_arguments["path"], mode="r") as f:
             file_content = f.readlines()
-        file_content.pop(control_arguments["delete_line"])
+        file_content.pop(control_arguments["deleteLine"])
         with open(control_arguments["path"], mode="w") as f:
             f.writelines(file_content)
         return {"success": True, "content": "".join(file_content)}
     except Exception as e:
         return {"success": False, "error": e}
+
+
+def new_task(control_arguments: dict) -> dict:
+    tasks_list.append({control_arguments["name"]: False})
+    return {"success": True, "tasks_list": tasks_list}
+
+
+def set_task_state(control_arguments: dict) -> dict:
+    tasks_list[control_arguments["name"]] = control_arguments["state"]
+    return {"success": True, "tasks_list": tasks_list}
+
+
+def get_tasks_list() -> dict:
+    return {"success": True, "tasks_list": tasks_list}
 
 
 def serialize_messages(messages) -> list:

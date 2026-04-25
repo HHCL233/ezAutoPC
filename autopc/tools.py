@@ -266,13 +266,13 @@ TOOLS: List[ChatCompletionToolParam] = [
             "description": "以文本格式向对应文件的某一行插入内容",
             "parameters": {
                 "type": "object",
-                "required": ["path", "insert_line", "content"],
+                "required": ["path", "insertLine", "content"],
                 "properties": {
                     "path": {
                         "type": "string",
                         "description": "文件目录",
                     },
-                    "insert_line": {
+                    "insertLine": {
                         "type": "integer",
                         "description": "插入行",
                     },
@@ -291,17 +291,67 @@ TOOLS: List[ChatCompletionToolParam] = [
             "description": "以文本格式删除对应文件的某一行",
             "parameters": {
                 "type": "object",
-                "required": ["path", "insert_line"],
+                "required": ["path", "deleteLine"],
                 "properties": {
                     "path": {
                         "type": "string",
                         "description": "文件目录",
                     },
-                    "delete_line": {
+                    "deleteLine": {
                         "type": "integer",
                         "description": "删除行",
                     },
                 },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "newTask",
+            "description": "向任务列表新建任务",
+            "parameters": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "任务名称",
+                    }
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "setTaskState",
+            "description": "设置任务列表的任务状态",
+            "parameters": {
+                "type": "object",
+                "required": ["name", "state"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "任务名称",
+                    },
+                    "state": {
+                        "type": "boolean",
+                        "description": "设置的任务状态",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "getTasksList",
+            "description": "获取任务列表",
+            "parameters": {
+                "type": "object",
+                "required": [],
+                "properties": {},
             },
         },
     },

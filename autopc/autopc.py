@@ -33,6 +33,9 @@ from .utils import (
     read_dir_list,
     insert_file,
     delete_file,
+    new_task,
+    set_task_state,
+    get_tasks_list,
 )
 from .plugins import PluginsManager
 from .mcp import MCPManager
@@ -92,6 +95,9 @@ _______       ________      ________      ___  ___      _________    ________   
             "insertFile": insert_file,
             "readDirList": read_dir_list,
             "readFile": read_file,
+            "newTask": new_task,
+            "setTaskState": set_task_state,
+            "getTasksList": lambda _: get_tasks_list(),
         }
 
         # 初始化

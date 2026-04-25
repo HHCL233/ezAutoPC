@@ -122,6 +122,7 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
+    max-height: 64vh;
 }
 
 .tools-setting-open {
