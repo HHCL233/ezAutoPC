@@ -74,6 +74,7 @@ onMounted(() => {
     width: 100%;
     height: 280px;
     pointer-events: none;
+    z-index: 2;
 }
 
 @media (prefers-color-scheme: light) {

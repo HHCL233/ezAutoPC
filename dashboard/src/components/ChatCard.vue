@@ -77,6 +77,7 @@ onMounted(async () => {
 .message-nomessage-content {
     padding: 8px;
     margin-top: 4px;
+    margin-left: 8px;
     user-select: none;
 }
 </style>

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { generalWS } from '@/utils/fetch'
 import { dialog } from 'mdui/functions/dialog'
+import { sendNotification } from '@/utils/notification';
 import type { TextField } from 'mdui/components/text-field.js';
 import type { ButtonIcon } from 'mdui/components/button-icon.js';
 import type { Ref } from 'vue'
@@ -21,7 +22,12 @@ export function useChatSocket(sendButton: Ref<ButtonIcon | null>, inputField: Re
     socket.on('response', (data) => {
         console.log('收到服务端消息:', data);
         if (data['type'] == "getAllMessages") {
-            messagesList.value = data.msg;
+            const msg = data.msg
+            const lastMsg = msg?.at(-1)
+            messagesList.value = msg;
+            if (lastMsg.role == 'assistant') {
+                sendNotification(`ezAutoAI 发送了消息 :${lastMsg?.content.slice(0, 8) ?? ''}...`)
+            }
             console.log("当前Token:" + data.token)
         } else if (data['type'] == "disabledSend") {
             if (sendButton.value && inputField.value) {
@@ -51,13 +57,17 @@ export function useChatSocket(sendButton: Ref<ButtonIcon | null>, inputField: Re
     socket.on('connect_error', function (error) {
         againConnect(error.message)
     });
-    const sendMessage = (() => {
+    const sendMessage = (async () => {
         if (inputField.value) {
             inputField.value.value = ''
         }
         scrollToBottom()
         socket.emit('message', JSON.stringify({ 'type': 'sendMessagesToAI', 'content': currentMessage.value }));
         socket.emit('message', JSON.stringify({ 'type': 'getAllMessages' }));
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+            return;
+        }
     })
 
     const scrollToBottom = () => {

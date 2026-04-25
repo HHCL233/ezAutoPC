@@ -229,7 +229,7 @@ TOOLS: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "readFile",
-            "description": "以文本格式读取对应目录下的文件",
+            "description": "以文本格式获取对应目录下的文件,返回的文件内容中每一行对应列表的一项",
             "parameters": {
                 "type": "object",
                 "required": ["path"],
@@ -237,6 +237,31 @@ TOOLS: List[ChatCompletionToolParam] = [
                     "path": {
                         "type": "string",
                         "description": "文件目录",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "readLinesFile",
+            "description": "以文本格式获取对应目录下的文件部分内容,返回的文件内容中每一行对应列表的一项",
+            "parameters": {
+                "type": "object",
+                "required": ["path", "startLine", "endLine"],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "文件目录",
+                    },
+                    "startLine": {
+                        "type": "integer",
+                        "description": "开始读取的行数,从0开始",
+                    },
+                    "endLine": {
+                        "type": "integer",
+                        "description": "结束读取的行数",
                     },
                 },
             },
@@ -263,7 +288,7 @@ TOOLS: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "insertFile",
-            "description": "以文本格式向对应文件的某一行插入内容",
+            "description": "以文本格式向对应文件的某一行插入内容,返回更改后的文件内容,返回的文件内容中每一行对应列表的一项",
             "parameters": {
                 "type": "object",
                 "required": ["path", "insertLine", "content"],
@@ -288,7 +313,7 @@ TOOLS: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "deleteFile",
-            "description": "以文本格式删除对应文件的某一行",
+            "description": "以文本格式删除对应文件的某一行,返回更改后的文件内容,返回的文件内容中每一行对应列表的一项",
             "parameters": {
                 "type": "object",
                 "required": ["path", "deleteLine"],

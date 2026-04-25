@@ -313,8 +313,22 @@ def read_autopc_config():
 def read_file(control_arguments: dict) -> dict:
     try:
         with open(control_arguments["path"], mode="r") as f:
-            content = f.read()
+            content = f.readlines()
         return {"success": True, "content": content}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def read_lines_file(control_arguments: dict) -> dict:
+    try:
+        with open(control_arguments["path"], mode="r") as f:
+            content = f.readlines()
+        return {
+            "success": True,
+            "content": content[
+                control_arguments["startLine"] : control_arguments["endLine"]
+            ],
+        }
     except Exception as e:
         return {"success": False, "error": e}
 
@@ -347,7 +361,7 @@ def insert_file(control_arguments: dict) -> dict:
         )
         with open(control_arguments["path"], mode="w") as f:
             f.writelines(file_content)
-        return {"success": True, "content": "".join(file_content)}
+        return {"success": True, "content": file_content}
     except Exception as e:
         return {"success": False, "error": e}
 
@@ -360,7 +374,7 @@ def delete_file(control_arguments: dict) -> dict:
         file_content.pop(control_arguments["deleteLine"])
         with open(control_arguments["path"], mode="w") as f:
             f.writelines(file_content)
-        return {"success": True, "content": "".join(file_content)}
+        return {"success": True, "content": file_content}
     except Exception as e:
         return {"success": False, "error": e}
 
