@@ -169,7 +169,7 @@ def image_add_lim(path: str):
     plt.close(fig)
 
 
-def run_command_silently(command: str):
+def run_command_silently(command: str) -> None:
     """
     静默执行终端命令（用于线程）
     :param command: 命令字符串
@@ -203,7 +203,7 @@ def download_file(control_arguments: dict) -> dict:
         return {"success": True, "savePath": save_path}
     except Exception as e:
         print(f"[下载文件] {e}")
-        return {"success": False}
+        return {"success": False, "error": e}
 
 
 def get_request(control_arguments: dict) -> dict:
@@ -223,7 +223,7 @@ def get_request(control_arguments: dict) -> dict:
         }
     except Exception as e:
         print(f"[Get请求] {e}")
-        return {"success": False}
+        return {"success": False, "error": e}
 
 
 def post_request(control_arguments: dict) -> dict:
@@ -248,11 +248,11 @@ def post_request(control_arguments: dict) -> dict:
         }
     except Exception as e:
         print(f"[Get请求] {e}")
-        return {"success": False}
+        return {"success": False, "error": e}
 
 
 # 对pyautogui的简单封装
-def mouse_action(control_arguments: dict):
+def mouse_action(control_arguments: dict) -> None:
     pyautogui.FAILSAFE = False
     pyautogui.moveTo(
         int(control_arguments["x"]),
@@ -264,27 +264,27 @@ def mouse_action(control_arguments: dict):
     )
 
 
-def click_action():
+def click_action() -> dict:
     pyautogui.click()
     return {"success": True}
 
 
-def double_click_action():
+def double_click_action() -> dict:
     pyautogui.doubleClick()
     return {"success": True}
 
 
-def write_action(control_arguments: dict):
+def write_action(control_arguments: dict) -> dict:
     pyautogui.write(control_arguments["content"])
     return {"success": True}
 
 
-def press_action(control_arguments: dict):
+def press_action(control_arguments: dict) -> dict:
     pyautogui.press(control_arguments["key"])
     return {"success": True}
 
 
-def terminal_action(control_arguments: dict):
+def terminal_action(control_arguments: dict) -> dict:
     run_command = control_arguments["command"]
     print("[执行命令]", run_command)
     thread = threading.Thread(target=run_command_silently, args=(run_command,))
@@ -293,7 +293,7 @@ def terminal_action(control_arguments: dict):
     return {"success": True}
 
 
-def return_terminal_action(control_arguments: dict):
+def return_terminal_action(control_arguments: dict) -> dict:
     run_command = control_arguments["command"]
     print("[执行命令]", run_command)
     result = subprocess.run(run_command, shell=True, capture_output=True, text=True)
@@ -306,3 +306,71 @@ def read_autopc_config():
     config = ConfigManager.read_config(os.getcwd(), os.path.expanduser("~/.ezautopc"))
     print("[读取配置] 已读取配置内容")
     return {"success": True, "content": config}
+
+
+def read_file(control_arguments: dict) -> dict:
+    try:
+        with open(control_arguments["path"], mode="r") as f:
+            content = f.read()
+        return {"success": True, "content": content}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def read_dir_list(control_arguments: dict) -> dict:
+    try:
+        files_list = []
+        with os.scandir(control_arguments["dir"]) as entries:
+            for entry in entries:
+                files_list.append(
+                    {
+                        "name": entry.name,
+                        "path": entry.path,
+                        "is_file": entry.is_file(),
+                        "is_dir": entry.is_dir(),
+                    }
+                )
+        return {"success": True, "files_list": files_list}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def insert_file(control_arguments: dict) -> dict:
+    try:
+        file_content = []
+        with open(control_arguments["path"], mode="r") as f:
+            file_content = f.readlines()
+        file_content.insert(
+            control_arguments["insert_line"], control_arguments["content"]
+        )
+        with open(control_arguments["path"], mode="w") as f:
+            f.writelines(file_content)
+        return {"success": True, "content": "".join(file_content)}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def delete_file(control_arguments: dict) -> dict:
+    try:
+        file_content = []
+        with open(control_arguments["path"], mode="r") as f:
+            file_content = f.readlines()
+        file_content.pop(control_arguments["delete_line"])
+        with open(control_arguments["path"], mode="w") as f:
+            f.writelines(file_content)
+        return {"success": True, "content": "".join(file_content)}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def serialize_messages(messages) -> list:
+    return [
+        msg.model_dump()
+        if hasattr(msg, "model_dump")
+        else msg
+        if isinstance(msg, dict)
+        else msg.__dict__
+        if hasattr(msg, "__dict__")
+        else str(msg)
+        for msg in messages
+    ]

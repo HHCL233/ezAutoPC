@@ -28,6 +28,11 @@ from .utils import (
     get_request,
     post_request,
     read_autopc_config,
+    serialize_messages,
+    read_file,
+    read_dir_list,
+    insert_file,
+    delete_file,
 )
 from .plugins import PluginsManager
 from .mcp import MCPManager
@@ -82,6 +87,11 @@ _______       ________      ________      ___  ___      _________    ________   
             "getRequest": get_request,
             "postRequest": post_request,
             "readAutoPCConfig": lambda _: read_autopc_config(),
+            "childAgentChat": self.child_agent_chat,
+            "deleteFile": delete_file,
+            "insertFile": insert_file,
+            "readDirList": read_dir_list,
+            "readFile": read_file,
         }
 
         # 初始化
@@ -108,7 +118,8 @@ _______       ________      ________      ___  ___      _________    ________   
             }
 """
         )
-        self.messages = [{"role": "system", "content": self.all_tools_prompt}]
+        self.begin_prompt = {"role": "system", "content": self.all_tools_prompt}
+        self.messages = [self.begin_prompt]
         self.full_messages = self.messages.copy()
 
     def on_ai_send_message_handler(self):
@@ -212,8 +223,27 @@ _______       ________      ________      ___  ___      _________    ________   
     def _wrap_read_skill_md(self, control_arguments):
         return self.skills_manager.read_skill_md(control_arguments["name"])
 
-    def send_tools_ai_message(self, prompt, image_source, name=None):
+    def child_agent_chat(self, control_arguments: dict) -> dict:
+        self.send_tools_ai_message(
+            prompt=control_arguments["content"],
+            image_source=None,
+            is_child=True,
+            child_id=int(control_arguments["id"]),
+        )
+        return {
+            "success": True,
+            "messages": serialize_messages(
+                self.child_messages[control_arguments["id"]][1:-1]
+            ),
+        }
+
+    def send_tools_ai_message(
+        self, prompt, image_source, name=None, is_child=False, child_id=0
+    ):
         finish_reason = None
+        if len(self.child_messages) < (child_id + 1):
+            for _ in range(child_id + 1):
+                self.child_messages.append([self.begin_prompt])
         if self.config.setdefault("is_multimodal", "") and image_source:
             self.push_messages(
                 {
@@ -228,34 +258,53 @@ _______       ________      ________      ___  ___      _________    ________   
                             },
                         },
                     ],
-                }
+                },
+                is_child,
+                child_id,
             )
         else:
-            print("[警告] is_multimodal为false,因此不会发送屏幕截图")
+            if not is_child:
+                print("[警告] is_multimodal为false,因此不会发送屏幕截图")
             self.push_messages(
                 {
                     "role": "user",
                     "name": "user" if name is None else name,
                     "content": [{"type": "text", "text": prompt}],
-                }
+                },
+                is_child,
+                child_id,
             )
         try:
             while finish_reason is None or finish_reason == "tool_calls":
                 self.on_ai_send_message_handler()
-                completion = self.client.chat.completions.create(
-                    model=self.config.setdefault("model", ""),
-                    temperature=float(self.config.setdefault("temperature", 0.6)),
-                    messages=self.messages,
-                    tools=self.tools,
-                    extra_body={
-                        "thinking": {
-                            "type": "enabled"
-                            if self.config.setdefault("thinking", False)
-                            else "disabled"
-                        }
-                    },
-                )
-                print(completion)
+                if is_child:
+                    completion = self.client.chat.completions.create(
+                        model=self.config.setdefault("model", ""),
+                        temperature=float(self.config.setdefault("temperature", 0.6)),
+                        messages=self.child_messages[child_id],
+                        tools=self.tools,
+                        extra_body={
+                            "thinking": {
+                                "type": "enabled"
+                                if self.config.setdefault("thinking", False)
+                                else "disabled"
+                            }
+                        },
+                    )
+                else:
+                    completion = self.client.chat.completions.create(
+                        model=self.config.setdefault("model", ""),
+                        temperature=float(self.config.setdefault("temperature", 0.6)),
+                        messages=self.messages,
+                        tools=self.tools,
+                        extra_body={
+                            "thinking": {
+                                "type": "enabled"
+                                if self.config.setdefault("thinking", False)
+                                else "disabled"
+                            }
+                        },
+                    )
                 if completion.choices:
                     choice = completion.choices[0]
                     finish_reason = choice.finish_reason
@@ -273,10 +322,12 @@ _______       ________      ________      ___  ___      _________    ________   
                     )
 
                 if message:
-                    self.push_messages(message)
+                    self.push_messages(message, is_child, child_id)
 
-                if message.content and finish_reason != "tool_calls":
+                if message.content and finish_reason != "tool_calls" and not is_child:
                     print("[AI回复]", message.content)
+                elif message.content and finish_reason != "tool_calls" and is_child:
+                    print("[子AI回复]", message.content)
 
                 if finish_reason == "tool_calls":
                     for tool_call in message.tool_calls:
@@ -295,7 +346,6 @@ _______       ________      ________      ___  ___      _________    ________   
                                     "success": False,
                                     "error": "此操作不在允许清单内",
                                 }
-                            print(tool_result)
                             self.push_messages(
                                 {
                                     "role": "tool",
@@ -304,7 +354,9 @@ _______       ________      ________      ___  ___      _________    ________   
                                     "content": json.dumps(
                                         tool_result, ensure_ascii=False
                                     ),
-                                }
+                                },
+                                is_child,
+                                child_id,
                             )
                 self.on_ai_send_message_handler()
             if (
@@ -394,7 +446,9 @@ _______       ________      ________      ___  ___      _________    ________   
 
         # 构建初始消息
 
-        self.messages: Any = [{"role": "system", "content": TOOLS_PROMPT}]
+        self.begin_prompt = {"role": "system", "content": TOOLS_PROMPT}
+        self.messages: Any = [self.begin_prompt]
+        self.child_messages: Any = []
         self._init_prompts()
 
         # 加载插件
@@ -411,9 +465,12 @@ _______       ________      ________      ___  ___      _________    ________   
             self.allow_tools.remove(tool_name)
             print(f"[权限管理] 在本对话中已拒绝使用 {tool_name}")
 
-    def push_messages(self, message):
-        self.messages.append(message)
-        self.full_messages.append(message)
+    def push_messages(self, message, is_child=False, child_id=0):
+        if is_child:
+            self.child_messages[child_id].append(message)
+        else:
+            self.messages.append(message)
+            self.full_messages.append(message)
 
     def exit_autopc(self):
         os._exit(0)
