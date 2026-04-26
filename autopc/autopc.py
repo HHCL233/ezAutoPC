@@ -36,6 +36,7 @@ from .utils import (
     new_task,
     set_task_state,
     get_tasks_list,
+    delete_task,
 )
 from .plugins import PluginsManager
 from .mcp import MCPManager
@@ -98,6 +99,7 @@ _______       ________      ________      ___  ___      _________    ________   
             "newTask": new_task,
             "setTaskState": set_task_state,
             "getTasksList": lambda _: get_tasks_list(),
+            "deleteTask": delete_task,
         }
 
         # 初始化

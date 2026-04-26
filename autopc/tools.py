@@ -341,7 +341,24 @@ TOOLS: List[ChatCompletionToolParam] = [
                 "properties": {
                     "name": {
                         "type": "string",
-                        "description": "任务名称",
+                        "description": "新增任务名称",
+                    }
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "deleteTask",
+            "description": "在任务列表删除任务",
+            "parameters": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "删除任务名称",
                     }
                 },
             },

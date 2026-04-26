@@ -384,6 +384,19 @@ def new_task(control_arguments: dict) -> dict:
     return {"success": True, "tasks_list": tasks_list}
 
 
+def delete_task(control_arguments: dict) -> dict:
+    task_name = control_arguments["name"]
+    deleted = False
+    while {task_name: True} in tasks_list:
+        tasks_list.remove({task_name: True})
+        deleted = True
+    while {task_name: False} in tasks_list:
+        tasks_list.remove({task_name: False})
+        deleted = True
+
+    return {"success": deleted, "tasks_list": tasks_list}
+
+
 def set_task_state(control_arguments: dict) -> dict:
     tasks_list[control_arguments["name"]] = control_arguments["state"]
     return {"success": True, "tasks_list": tasks_list}
