@@ -37,6 +37,13 @@ from .utils import (
     set_task_state,
     get_tasks_list,
     delete_task,
+    remove_folder,
+    remove_file,
+    new_file,
+    copy_file,
+    create_dir,
+    move_dir,
+    copy_folder,
 )
 from .plugins import PluginsManager
 from .mcp import MCPManager
@@ -92,7 +99,7 @@ _______       ________      ________      ___  ___      _________    ________   
             "postRequest": post_request,
             "readAutoPCConfig": lambda _: read_autopc_config(),
             "childAgentChat": self.child_agent_chat,
-            "deleteFile": delete_file,
+            "deleteFileLine": delete_file,
             "insertFile": insert_file,
             "readDirList": read_dir_list,
             "readFile": read_file,
@@ -100,6 +107,13 @@ _______       ________      ________      ___  ___      _________    ________   
             "setTaskState": set_task_state,
             "getTasksList": lambda _: get_tasks_list(),
             "deleteTask": delete_task,
+            "removeFile": remove_file,
+            "removeFolder": remove_folder,
+            "newFile": new_file,
+            "copyFile": copy_file,
+            "createFolder": create_dir,
+            "moveDir": move_dir,
+            "copyFolder": copy_folder,
         }
 
         # 初始化

@@ -10,6 +10,7 @@ from PIL import Image
 import pyautogui
 import httpx
 import matplotlib
+import shutil
 
 # 固定matplotlib后端
 matplotlib.use("Agg")
@@ -237,9 +238,9 @@ def post_request(control_arguments: dict) -> dict:
     try:
         response = httpx.post(
             control_arguments["url"],
-            json=control_arguments["json"],
-            headers=control_arguments["headers"],
-            cookies=control_arguments["cookies"],
+            json=control_arguments.get("json"),
+            headers=control_arguments.get("headers"),
+            cookies=control_arguments.get("cookies"),
         )
         response.raise_for_status()
 
@@ -375,6 +376,85 @@ def delete_file(control_arguments: dict) -> dict:
         with open(control_arguments["path"], mode="w") as f:
             f.writelines(file_content)
         return {"success": True, "content": file_content}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def remove_file(control_arguments: dict) -> dict:
+    file_path = control_arguments["path"]
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return {"success": True}
+    else:
+        return {"success": False, "error": "文件不存在"}
+
+
+def remove_folder(control_arguments: dict) -> dict:
+    folder_path = control_arguments["path"]
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)
+        return {"success": True}
+    else:
+        return {"success": False, "error": "文件夹不存在"}
+
+
+def move_dir(control_arguments: dict) -> dict:
+    try:
+        src = control_arguments["srcPath"]
+        dst = control_arguments["dstPath"]
+        is_cover = control_arguments["isCover"]
+        if not os.path.exists(src):
+            return {"success": False, "error": f"{src} 不存在"}
+        if not is_cover and os.path.exists(dst):
+            return {"success": False, "error": f"{dst} 已存在文件"}
+        shutil.move(src, dst)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def copy_file(control_arguments: dict) -> dict:
+    try:
+        src = control_arguments["srcPath"]
+        dst = control_arguments["dstPath"]
+        is_cover = control_arguments["isCover"]
+        if not os.path.exists(src):
+            return {"success": False, "error": f"{src} 不存在"}
+        if not is_cover and os.path.exists(dst):
+            return {"success": False, "error": f"{dst} 已存在文件"}
+        shutil.copy2(src, dst)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def copy_folder(control_arguments: dict) -> dict:
+    try:
+        src = control_arguments["srcPath"]
+        dst = control_arguments["dstPath"]
+        if not os.path.exists(src):
+            return {"success": False, "error": f"{src} 不存在"}
+        shutil.copytree(src, dst)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def new_file(control_arguments: dict) -> dict:
+    try:
+        file_path = control_arguments["path"]
+        file_content = control_arguments["content"]
+        with open(file_path, "x", encoding="utf-8") as file:
+            file.write(file_content)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": e}
+
+
+def create_dir(control_arguments: dict) -> dict:
+    try:
+        os.makedirs(control_arguments["path"])
+        return {"success": True}
     except Exception as e:
         return {"success": False, "error": e}
 

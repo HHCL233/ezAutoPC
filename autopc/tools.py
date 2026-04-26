@@ -170,7 +170,7 @@ TOOLS: List[ChatCompletionToolParam] = [
             "description": "使用Post请求方式访问API并获取内容",
             "parameters": {
                 "type": "object",
-                "required": ["url", "json", "headers", "cookies"],
+                "required": ["url"],
                 "properties": {
                     "url": {
                         "type": "string",
@@ -312,7 +312,7 @@ TOOLS: List[ChatCompletionToolParam] = [
     {
         "type": "function",
         "function": {
-            "name": "deleteFile",
+            "name": "deleteFileLine",
             "description": "以文本格式删除对应文件的某一行,返回更改后的文件内容,返回的文件内容中每一行对应列表的一项",
             "parameters": {
                 "type": "object",
@@ -394,6 +394,149 @@ TOOLS: List[ChatCompletionToolParam] = [
                 "type": "object",
                 "required": [],
                 "properties": {},
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "removeFile",
+            "description": "删除文件",
+            "parameters": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "文件路径",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "removeFolder",
+            "description": "删除文件夹",
+            "parameters": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "文件夹路径",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "newFile",
+            "description": "新建UTF8编码文件并写入内容",
+            "parameters": {
+                "type": "object",
+                "required": ["path", "content"],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "文件目录,使用绝对路径",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "要写入的完整文本内容",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "createFolder",
+            "description": "新建文件夹",
+            "parameters": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "文件夹目录,使用绝对路径",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "moveDir",
+            "description": "移动文件夹/文件,也可用于重命名文件",
+            "parameters": {
+                "type": "object",
+                "required": ["srcPath", "dstPath", "isCover"],
+                "properties": {
+                    "srcPath": {
+                        "type": "string",
+                        "description": "源文件/文件夹目录",
+                    },
+                    "dstPath": {
+                        "type": "string",
+                        "description": "移动后文件/文件夹目录",
+                    },
+                    "isCover": {
+                        "type": "boolean",
+                        "description": "是否直接覆盖移动后文件/文件夹目录对应的文件",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "copyFolder",
+            "description": "复制文件夹",
+            "parameters": {
+                "type": "object",
+                "required": ["srcPath", "dstPath"],
+                "properties": {
+                    "srcPath": {
+                        "type": "string",
+                        "description": "源文件夹目录",
+                    },
+                    "dstPath": {
+                        "type": "string",
+                        "description": "移动后文件夹目录",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "copyFile",
+            "description": "复制文件",
+            "parameters": {
+                "type": "object",
+                "required": ["srcPath", "dstPath", "isCover"],
+                "properties": {
+                    "srcPath": {
+                        "type": "string",
+                        "description": "源文件目录",
+                    },
+                    "dstPath": {
+                        "type": "string",
+                        "description": "复制后文件目录",
+                    },
+                    "isCover": {
+                        "type": "boolean",
+                        "description": "是否直接覆盖复制后文件目录对应的文件",
+                    },
+                },
             },
         },
     },
