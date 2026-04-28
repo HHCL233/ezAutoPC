@@ -206,7 +206,7 @@ def download_file(control_arguments: dict) -> dict:
         return {"success": True, "savePath": save_path}
     except Exception as e:
         print(f"[下载文件] {e}")
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def get_request(control_arguments: dict) -> dict:
@@ -226,7 +226,7 @@ def get_request(control_arguments: dict) -> dict:
         }
     except Exception as e:
         print(f"[Get请求] {e}")
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def post_request(control_arguments: dict) -> dict:
@@ -251,7 +251,7 @@ def post_request(control_arguments: dict) -> dict:
         }
     except Exception as e:
         print(f"[Get请求] {e}")
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 # 对pyautogui的简单封装
@@ -317,7 +317,7 @@ def read_file(control_arguments: dict) -> dict:
             content = f.readlines()
         return {"success": True, "content": content}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def read_lines_file(control_arguments: dict) -> dict:
@@ -331,7 +331,7 @@ def read_lines_file(control_arguments: dict) -> dict:
             ],
         }
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def read_dir_list(control_arguments: dict) -> dict:
@@ -349,7 +349,7 @@ def read_dir_list(control_arguments: dict) -> dict:
                 )
         return {"success": True, "files_list": files_list}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def insert_file(control_arguments: dict) -> dict:
@@ -364,7 +364,7 @@ def insert_file(control_arguments: dict) -> dict:
             f.writelines(file_content)
         return {"success": True, "content": file_content}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def delete_file(control_arguments: dict) -> dict:
@@ -377,7 +377,7 @@ def delete_file(control_arguments: dict) -> dict:
             f.writelines(file_content)
         return {"success": True, "content": file_content}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def remove_file(control_arguments: dict) -> dict:
@@ -410,7 +410,7 @@ def move_dir(control_arguments: dict) -> dict:
         shutil.move(src, dst)
         return {"success": True}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def copy_file(control_arguments: dict) -> dict:
@@ -425,7 +425,7 @@ def copy_file(control_arguments: dict) -> dict:
         shutil.copy2(src, dst)
         return {"success": True}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def copy_folder(control_arguments: dict) -> dict:
@@ -437,26 +437,33 @@ def copy_folder(control_arguments: dict) -> dict:
         shutil.copytree(src, dst)
         return {"success": True}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def new_file(control_arguments: dict) -> dict:
     try:
         file_path = control_arguments["path"]
         file_content = control_arguments["content"]
+        if os.path.exists(file_path):
+            return {"success": False, "error": f"{file_path} 文件已存在"}
         with open(file_path, "x", encoding="utf-8") as file:
             file.write(file_content)
         return {"success": True}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def create_dir(control_arguments: dict) -> dict:
     try:
+        if os.path.exists(control_arguments["path"]):
+            return {
+                "success": False,
+                "error": f"{control_arguments['path']} 已存在文件",
+            }
         os.makedirs(control_arguments["path"])
         return {"success": True}
     except Exception as e:
-        return {"success": False, "error": e}
+        return {"success": False, "error": str(e)}
 
 
 def new_task(control_arguments: dict) -> dict:
