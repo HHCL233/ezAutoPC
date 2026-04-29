@@ -1,5 +1,6 @@
 _command_registry = []
 _ai_send_message_callback_registry = []
+_ai_use_tool_callback_registry = []
 
 
 def registr_command(cmd_name):
@@ -21,6 +22,15 @@ def registr_ai_send_message_callback():
     return decorator
 
 
+def registr_ai_use_tool_callback():
+    """注册AI使用工具时回调"""
+
+    def decorator(func):
+        _ai_use_tool_callback_registry.append(func)
+
+    return decorator
+
+
 def register_all_plugins_controls(autopc):
     for cmd_name, func in _command_registry:
         autopc.commands[cmd_name] = func
@@ -31,5 +41,7 @@ def register_all_plugins_controls(autopc):
             f(msg)
 
         autopc.on_ai_send_message.append(wrapped_callback)
+    for func in _ai_use_tool_callback_registry:
+        autopc.on_tool_use.append(func)
     _command_registry.clear()
     _ai_send_message_callback_registry.clear()

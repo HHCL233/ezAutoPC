@@ -21,7 +21,8 @@
                     "test"
                 ],
                 "temperature": "1",
-                "thinking": true
+                "thinking": true,
+                "tool_use_security_check": {}
             }
         ]
     },

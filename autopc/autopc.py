@@ -81,6 +81,7 @@ _______       ________      ________      ___  ___      _________    ________   
         self.client = OpenAI(api_key="")
         self.tools: list = TOOLS
         self.on_ai_send_message = []
+        self.on_tool_use = []
         self.allow_tools = []
         self.commands = {}
 
@@ -359,6 +360,20 @@ _______       ________      ________      ___  ___      _________    ________   
                         if tool_func:
                             tool_result = None
                             if tool_call_name in self.allow_tools:
+                                for handler in self.on_tool_use:
+                                    tool_exec_decide = handler(
+                                        {
+                                            "tool_call_name": tool_call_name,
+                                            "tool_call_args": tool_call_args,
+                                        }
+                                    )
+                                    if not tool_exec_decide.get("exec"):
+                                        tool_result = {
+                                            "success": False,
+                                            "error": tool_exec_decide.get(
+                                                "msg", "此操作被阻止"
+                                            ),
+                                        }
                                 if inspect.iscoroutinefunction(tool_func):
                                     tool_result = asyncio.run(tool_func(tool_call_args))
                                 else:
