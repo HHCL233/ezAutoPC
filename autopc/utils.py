@@ -11,6 +11,7 @@ import pyautogui
 import httpx
 import matplotlib
 import shutil
+import json
 
 # 固定matplotlib后端
 matplotlib.use("Agg")
@@ -491,6 +492,21 @@ def set_task_state(control_arguments: dict) -> dict:
 
 def get_tasks_list() -> dict:
     return {"success": True, "tasks_list": tasks_list}
+
+
+def read_image_file(control_arguments: dict):
+    try:
+        with open(control_arguments["path"], "rb") as f:
+            base64_data = base64.b64encode(f.read())
+            return [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": base64_data, "detail": "auto"},
+                },
+                {"type": "text", "text": json.dumps({"success": True})},
+            ]
+    except Exception as e:
+        return {"success": False, "error": e}
 
 
 def serialize_messages(messages) -> list:

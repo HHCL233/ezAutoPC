@@ -22,7 +22,8 @@
                 ],
                 "temperature": "1",
                 "thinking": true,
-                "tool_use_security_check": {}
+                "tool_use_security_check": {},
+                "no_dashboard": false
             }
         ]
     },

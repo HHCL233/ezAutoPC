@@ -540,4 +540,21 @@ TOOLS: List[ChatCompletionToolParam] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "readImageFile",
+            "description": "获取图像文件内容",
+            "parameters": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "文件目录",
+                    },
+                },
+            },
+        },
+    },
 ]

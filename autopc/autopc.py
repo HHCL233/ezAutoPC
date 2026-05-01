@@ -44,6 +44,7 @@ from .utils import (
     create_dir,
     move_dir,
     copy_folder,
+    read_image_file,
 )
 from .plugins import PluginsManager
 from .mcp import MCPManager
@@ -115,6 +116,7 @@ _______       ________      ________      ___  ___      _________    ________   
             "createFolder": create_dir,
             "moveDir": move_dir,
             "copyFolder": copy_folder,
+            "readImageFile": read_image_file,
         }
 
         # 初始化
@@ -383,18 +385,30 @@ _______       ________      ________      ___  ___      _________    ________   
                                     "success": False,
                                     "error": "此操作不在允许清单内",
                                 }
-                            self.push_messages(
-                                {
-                                    "role": "tool",
-                                    "tool_call_id": tool_call.id,
-                                    "name": tool_call_name,
-                                    "content": json.dumps(
-                                        tool_result, ensure_ascii=False
-                                    ),
-                                },
-                                is_child,
-                                child_id,
-                            )
+                            if not isinstance(tool_result, list):
+                                self.push_messages(
+                                    {
+                                        "role": "tool",
+                                        "tool_call_id": tool_call.id,
+                                        "name": tool_call_name,
+                                        "content": json.dumps(
+                                            tool_result, ensure_ascii=False
+                                        ),
+                                    },
+                                    is_child,
+                                    child_id,
+                                )
+                            else:
+                                self.push_messages(
+                                    {
+                                        "role": "tool",
+                                        "tool_call_id": tool_call.id,
+                                        "name": tool_call_name,
+                                        "content": tool_result,
+                                    },
+                                    is_child,
+                                    child_id,
+                                )
                 self.on_ai_send_message_handler()
             if (
                 finish_reason == "stop"
