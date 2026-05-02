@@ -224,7 +224,7 @@ def onAISendMessage():
             "msg": serializeMessages(autopc.full_messages),
             "timestamp": time.time(),
             "type": "getAllMessages",
-            "token": (autopc.get_messages_token())["token"],
+            "token": autopc.total_tokens,
         },
         broadcast=True,
     )

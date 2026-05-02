@@ -79,12 +79,18 @@ _______       ________      ________      ___  ___      _________    ________   
         # 初始化实例变量
         self.skills = {}
         self.config = {}
-        self.client = OpenAI(api_key="")
+        self.client = OpenAI(
+            api_key="",
+            default_headers={
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            },
+        )
         self.tools: list = TOOLS
         self.on_ai_send_message = []
         self.on_tool_use = []
         self.allow_tools = []
         self.commands = {}
+        self.total_tokens = 0
 
         # 工具映射
         self.tool_map = {
@@ -151,31 +157,6 @@ _______       ________      ________      ___  ___      _________    ________   
         for handler in self.on_ai_send_message:
             handler()
 
-    def _count_token(self, text: str) -> int:
-        if not text:
-            return 0
-        return int(len(text) * 1.3) + 1
-
-    def get_messages_token(self):
-        total = 0
-        for msg in self.messages:
-            total += 3
-            role: Any = msg.get("role") if isinstance(msg, dict) else msg.role
-            content: Any = msg.get("content") if isinstance(msg, dict) else msg.content
-            reasoning_content: Any = (
-                msg.get("reasoning_content")
-                if isinstance(msg, dict)
-                else getattr(msg, "reasoning_content", "")
-            )
-
-            total += self._count_token(role)
-            total += self._count_token(content)
-            total += self._count_token(reasoning_content)
-
-        total += 3
-        print(f"[Token] 当前上下文token:{total}")
-        return {"token": total}
-
     def recap_messages(self):
         try:
             text_parts = []
@@ -216,7 +197,7 @@ _______       ________      ________      ___  ___      _________    ________   
             return False
 
     def try_recap_messages(self):
-        token = self.get_messages_token()
+        token = {"token": self.total_tokens}
         if token["token"] >= (
             int(self.config.setdefault("context_window", "128000")) * 0.75
         ):
@@ -230,7 +211,7 @@ _______       ________      ________      ___  ___      _________    ________   
             self.on_ai_send_message_handler()
             print("[压缩Token] 达到Token上限,开始总结")
             recap_success = self.recap_messages()
-            current_token = self.get_messages_token()
+            current_token = {"token": self.total_tokens}
             self.push_messages(
                 {
                     "role": "assistant",
@@ -330,6 +311,8 @@ _______       ________      ________      ___  ___      _________    ________   
                             }
                         },
                     )
+                if completion.usage and completion.usage.total_tokens:
+                    self.total_tokens = completion.usage.total_tokens
                 if completion.choices:
                     choice = completion.choices[0]
                     finish_reason = choice.finish_reason
@@ -419,7 +402,12 @@ _______       ________      ________      ___  ___      _________    ________   
         except Exception as e:
             print("[异常] ", e)
             self.push_messages(
-                {"name": "system_notice", "role": "assistant", "content": f"[异常] {e}"}
+                {
+                    "name": "system_notice",
+                    "role": "assistant",
+                    "content": f"[异常] {e}",
+                    "reasoning_content": f"BaseURL:{self.client.base_url}",
+                }
             )
             self.on_ai_send_message_handler()
 
