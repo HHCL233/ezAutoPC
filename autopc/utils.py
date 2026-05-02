@@ -175,7 +175,7 @@ def image_add_lim(path: str):
 
 def run_command_silently(command: str) -> None:
     """
-    静默执行终端命令（用于线程）
+    静默执行终端命令(用于线程)
     :param command: 命令字符串
     """
     try:
@@ -257,6 +257,10 @@ def post_request(control_arguments: dict) -> dict:
 
 # 对pyautogui的简单封装
 def mouse_action(control_arguments: dict) -> None:
+    """
+    鼠标移动
+    :param control_arguments: 参数
+    """
     pyautogui.FAILSAFE = False
     pyautogui.moveTo(
         int(control_arguments["x"]),
@@ -269,26 +273,46 @@ def mouse_action(control_arguments: dict) -> None:
 
 
 def click_action() -> dict:
+    """
+    鼠标点击
+    :param control_arguments: 参数
+    """
     pyautogui.click()
     return {"success": True}
 
 
 def double_click_action() -> dict:
+    """
+    鼠标双击
+    :param control_arguments: 参数
+    """
     pyautogui.doubleClick()
     return {"success": True}
 
 
 def write_action(control_arguments: dict) -> dict:
+    """
+    键盘书写
+    :param control_arguments: 参数
+    """
     pyautogui.write(control_arguments["content"])
     return {"success": True}
 
 
 def press_action(control_arguments: dict) -> dict:
+    """
+    按下按键
+    :param control_arguments: 参数
+    """
     pyautogui.press(control_arguments["key"])
     return {"success": True}
 
 
 def terminal_action(control_arguments: dict) -> dict:
+    """
+    终端操作
+    :param control_arguments: 参数
+    """
     run_command = control_arguments["command"]
     print("[执行命令]", run_command)
     thread = threading.Thread(target=run_command_silently, args=(run_command,))
@@ -298,6 +322,10 @@ def terminal_action(control_arguments: dict) -> dict:
 
 
 def return_terminal_action(control_arguments: dict) -> dict:
+    """
+    返回终端
+    :param control_arguments: 参数
+    """
     run_command = control_arguments["command"]
     print("[执行命令]", run_command)
     result = subprocess.run(run_command, shell=True, capture_output=True, text=True)
@@ -305,6 +333,9 @@ def return_terminal_action(control_arguments: dict) -> dict:
 
 
 def read_autopc_config():
+    """
+    读取配置
+    """
     from autopc.config import ConfigManager
 
     config = ConfigManager.read_config(os.getcwd(), os.path.expanduser("~/.ezautopc"))
@@ -313,6 +344,10 @@ def read_autopc_config():
 
 
 def read_file(control_arguments: dict) -> dict:
+    """
+    读取文件
+    :param control_arguments: 参数
+    """
     try:
         with open(control_arguments["path"], mode="r") as f:
             content = f.readlines()
@@ -322,6 +357,10 @@ def read_file(control_arguments: dict) -> dict:
 
 
 def read_lines_file(control_arguments: dict) -> dict:
+    """
+    读取文件某一行
+    :param control_arguments: 参数
+    """
     try:
         with open(control_arguments["path"], mode="r") as f:
             content = f.readlines()
@@ -336,6 +375,10 @@ def read_lines_file(control_arguments: dict) -> dict:
 
 
 def read_dir_list(control_arguments: dict) -> dict:
+    """
+    读取目录
+    :param control_arguments: 参数
+    """
     try:
         files_list = []
         with os.scandir(control_arguments["dir"]) as entries:
@@ -354,6 +397,10 @@ def read_dir_list(control_arguments: dict) -> dict:
 
 
 def insert_file(control_arguments: dict) -> dict:
+    """
+    插入行
+    :param control_arguments: 参数
+    """
     try:
         file_content = []
         with open(control_arguments["path"], mode="r") as f:
@@ -369,6 +416,10 @@ def insert_file(control_arguments: dict) -> dict:
 
 
 def delete_file(control_arguments: dict) -> dict:
+    """
+    删除文件行
+    :param control_arguments: 参数
+    """
     try:
         file_content = []
         with open(control_arguments["path"], mode="r") as f:
@@ -382,6 +433,10 @@ def delete_file(control_arguments: dict) -> dict:
 
 
 def remove_file(control_arguments: dict) -> dict:
+    """
+    删除文件
+    :param control_arguments: 参数
+    """
     file_path = control_arguments["path"]
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -391,6 +446,10 @@ def remove_file(control_arguments: dict) -> dict:
 
 
 def remove_folder(control_arguments: dict) -> dict:
+    """
+    删除文件夹
+    :param control_arguments: 参数
+    """
     folder_path = control_arguments["path"]
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
@@ -400,6 +459,10 @@ def remove_folder(control_arguments: dict) -> dict:
 
 
 def move_dir(control_arguments: dict) -> dict:
+    """
+    移动文件
+    :param control_arguments: 参数
+    """
     try:
         src = control_arguments["srcPath"]
         dst = control_arguments["dstPath"]
@@ -415,6 +478,10 @@ def move_dir(control_arguments: dict) -> dict:
 
 
 def copy_file(control_arguments: dict) -> dict:
+    """
+    复制文件
+    :param control_arguments: 参数
+    """
     try:
         src = control_arguments["srcPath"]
         dst = control_arguments["dstPath"]
@@ -430,6 +497,10 @@ def copy_file(control_arguments: dict) -> dict:
 
 
 def copy_folder(control_arguments: dict) -> dict:
+    """
+    复制文件夹
+    :param control_arguments: 参数
+    """
     try:
         src = control_arguments["srcPath"]
         dst = control_arguments["dstPath"]
@@ -442,6 +513,10 @@ def copy_folder(control_arguments: dict) -> dict:
 
 
 def new_file(control_arguments: dict) -> dict:
+    """
+    新建文件
+    :param control_arguments: 参数
+    """
     try:
         file_path = control_arguments["path"]
         file_content = control_arguments["content"]
@@ -455,6 +530,10 @@ def new_file(control_arguments: dict) -> dict:
 
 
 def create_dir(control_arguments: dict) -> dict:
+    """
+    创建文件夹
+    :param control_arguments: 参数
+    """
     try:
         if os.path.exists(control_arguments["path"]):
             return {
@@ -468,11 +547,19 @@ def create_dir(control_arguments: dict) -> dict:
 
 
 def new_task(control_arguments: dict) -> dict:
+    """
+    新建任务
+    :param control_arguments: 参数
+    """
     tasks_list.append({control_arguments["name"]: False})
     return {"success": True, "tasks_list": tasks_list}
 
 
 def delete_task(control_arguments: dict) -> dict:
+    """
+    删除任务
+    :param control_arguments: 参数
+    """
     task_name = control_arguments["name"]
     deleted = False
     while {task_name: True} in tasks_list:
@@ -486,15 +573,27 @@ def delete_task(control_arguments: dict) -> dict:
 
 
 def set_task_state(control_arguments: dict) -> dict:
+    """
+    设置任务状态
+    :param control_arguments: 参数
+    """
     tasks_list[control_arguments["name"]] = control_arguments["state"]
     return {"success": True, "tasks_list": tasks_list}
 
 
 def get_tasks_list() -> dict:
+    """
+    获取任务列表
+    :param control_arguments: 参数
+    """
     return {"success": True, "tasks_list": tasks_list}
 
 
 def read_image_file(control_arguments: dict):
+    """
+    读取图像文件
+    :param control_arguments: 参数
+    """
     try:
         with open(control_arguments["path"], "rb") as f:
             base64_data = base64.b64encode(f.read())
@@ -510,6 +609,10 @@ def read_image_file(control_arguments: dict):
 
 
 def serialize_messages(messages) -> list:
+    """
+    OpenAIMessages转字典
+    :param messages: 参数
+    """
     return [
         msg.model_dump()
         if hasattr(msg, "model_dump")
